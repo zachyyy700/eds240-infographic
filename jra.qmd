@@ -1,0 +1,26 @@
+---
+title: "EDS 240: Infographic"
+---
+
+
+```{r}
+# Load packages
+library(tidyverse)
+```
+
+```{r}
+# Load data
+jra_results <- read_csv('data/jra/19860105-20210731_race_result.csv') |> 
+    # Omit レース記号 columns
+    select(-starts_with("レース記号"))
+# teio filter
+teio <- jra_results |> 
+    filter(馬名　== "トウカイテイオー")
+```
+
+```{r}
+jra_results_eng <- jra_results
+# Translate df columns
+colnames(jra_results_eng) <- c("race_pp_id", "race_id", "race_date", "race_meeting_number", "racecourse_code", "racecourse_name", "nth_raceday", "race_prereq", "race_number", "graded_race_nth_time", "race_name", "listed_graded_race", "steeplechase", "turf_dirt", "turf_dirt2_steeplechase", "left_right_straight", "inside_outside", "distance_m", "weather", "track_condition1", "track_condition2_steeplechase", "post_time", "final_position", "final_position_notes", "bracket_number", "horse_number", "horse_name", "horse_sex", "horse_age", "weight", "jockey_name", "finish_time", "margin", "corner1_position", "corner2_position", "corner3_position", "corner4_position", "final_600m_time", "win_odds_100Y", "popular_rank", "horse_weight", "horse_weight_diff", "east_west_foreign", "horse_trainer", "horse_owner", "prize_money_10kY")
+
+```
