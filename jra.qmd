@@ -24,3 +24,39 @@ jra_results_eng <- jra_results
 colnames(jra_results_eng) <- c("race_pp_id", "race_id", "race_date", "race_meeting_number", "racecourse_code", "racecourse_name", "nth_raceday", "race_prereq", "race_number", "graded_race_nth_time", "race_name", "listed_graded_race", "steeplechase", "turf_dirt", "turf_dirt2_steeplechase", "left_right_straight", "inside_outside", "distance_m", "weather", "track_condition1", "track_condition2_steeplechase", "post_time", "final_position", "final_position_notes", "bracket_number", "horse_number", "horse_name", "horse_sex", "horse_age", "weight", "jockey_name", "finish_time", "margin", "corner1_position", "corner2_position", "corner3_position", "corner4_position", "final_600m_time", "win_odds_100Y", "popular_rank", "horse_weight", "horse_weight_diff", "east_west_foreign", "horse_trainer", "horse_owner", "prize_money_10kY")
 
 ```
+
+```{r}
+# Weather bar plot
+jra_results_eng |> 
+    group_by(weather) |> 
+    summarise(count = n()) |> 
+    ggplot(aes(x = count, y = fct_reorder(weather, count))) +
+    labs(x = "Amount of Days", y = "Weather") +
+    geom_bar(stat = "identity")
+```
+
+```{r}
+# Horse age
+jra_results_eng |> 
+    ggplot(aes(x = horse_age)) +
+    geom_histogram(bins = 15)
+```
+
+```{r}
+# Total horse winnings
+winnings_df <- jra_results_eng |> 
+    group_by(horse_name) |> 
+    summarise(total_winnings = sum(prize_money_10kY, na.rm = TRUE)) |> 
+    arrange(desc(total_winnings))
+```
+```{r}
+# Favorite to win & actual win relationship
+```
+
+```{r}
+# Horse gender & finish times?
+```
+
+```{r}
+# Track type & finish times
+```
