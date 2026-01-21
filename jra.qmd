@@ -10,7 +10,7 @@ library(tidyverse)
 
 ```{r}
 # Load data
-jra_results <- read_csv('data/jra/19860105-20210731_race_result.csv') |> 
+jra_results <- read_csv(here::here('data', '19860105-20210731_race_result.csv')) |> 
     # Omit レース記号 columns
     select(-starts_with("レース記号"))
 # teio filter
