@@ -12,6 +12,7 @@ author: "Zach Loo"
 library(tidyverse)
 library(jtools)
 library(gghighlight)
+library(scales)
 ```
 
 ```{r}
@@ -20,6 +21,11 @@ jra_results <- read_csv(here::here('data', '19860105-20210731_race_result.csv'),
 col_types = cols(レース馬番ID = 'c', レースID = 'c', タイム = 'c')) |> 
     # Omit レース記号 columns
     select(-starts_with("レース記号"))
+
+# jra_odds <- read_csv(here::here("data", "19860105-20210731_odds.csv"))
+# jra_laptime <- read_csv(here::here("data", "19860105-20210731_laptime.csv"),
+# col_types = cols(.default = 'c'))
+# jra_cornerpassing <- read_csv(here::here("data", "20020615-20210731_corner_passing_order.csv"))
 ```
 
 ## Initial Wrangling
@@ -33,7 +39,6 @@ jra_results_eng <- jra_results
 # Translate df columns
 colnames(jra_results_eng) <- c("race_pp_id", "race_id", "race_date", "race_meeting_number", "racecourse_code", "racecourse_name", "nth_raceday", "race_prereq", "race_number", "graded_race_nth_time", "race_name", "listed_graded_race", "steeplechase", "turf_dirt", "turf_dirt2_steeplechase", "left_right_straight", "inside_outside", "distance_m", "weather", "track_condition1", "track_condition2_steeplechase", "post_time", "final_position", "final_position_notes", "bracket_number", "horse_number", "horse_name", "horse_sex", "horse_age", "weight", "jockey_name", "finish_time", "margin", "corner1_position", "corner2_position", "corner3_position", "corner4_position", "final_600m_time", "win_odds_100Y", "popular_rank", "horse_weight", "horse_weight_diff", "east_west_foreign", "horse_trainer", "horse_owner", "prize_money_10kY")
 
-#jra_odds <- read_csv(here::here("data", "19860105-20210731_odds.csv"))
 ```
 
 ```{r}
@@ -62,6 +67,15 @@ jra_results_eng |>
 ```
 
 Most of race days are sunny, followed by cloudy, then rainy/light rain.
+
+```{r}
+# Gender compostion
+jra_results_eng |> 
+    group_by(horse_sex) |> 
+    summarise(sexcount = n()) |> 
+    ggplot(aes(horse_sex, sexcount)) +
+    geom_bar(stat = 'identity')
+```
 
 ```{r}
 # Spread of G1 races throughout the year
@@ -106,7 +120,26 @@ jra_results_eng |>
 
 ## Specific Descriptive Plots
 
-### Successful Horses by Prize Money
+### Effect of track condition on performance
+
+```{r}
+course_conditions <- jra_results_eng |> 
+    filter(final_position == 1) |> 
+    group_by(racecourse_name, distance_m, track_condition1) |> 
+    summarise(avg_time = mean(finish_time, na.rm = TRUE), races = n()) |> 
+    ungroup() |> 
+    mutate(track_condition1 = factor(track_condition1, levels = c("良", "稍重", "重", "不良")))
+
+filtered_conditions <- course_conditions |> 
+    filter(distance_m %in% c(1200, 1600, 1800, 2000), racecourse_name %in% c("中京", "東京", "中山", "京都", "阪神"))
+
+
+ggplot(filtered_conditions, aes(x = track_condition1, y = avg_time)) +
+    geom_jitter() +
+    facet_grid(racecourse_name ~ distance_m)
+```
+
+### Successful Horses by Prize Money & Total Wins
 
 ```{r}
 # Total horse winnings
@@ -115,6 +148,12 @@ winnings_df <- jra_results_eng |>
     summarise(avg_winnings_per_race = mean(prize_money_10kY, na.rm = TRUE),
     n_races = n()) |> 
     arrange(desc(avg_winnings_per_race))
+
+wincount_df <- jra_results_eng |> 
+    filter(final_position == 1) |> 
+    group_by(horse_name) |> 
+    summarise(total_wins = sum(final_position, na.rm = TRUE)) |> 
+    arrange(desc(total_wins))
 
 ```
 
@@ -160,10 +199,31 @@ ggplot(jra_results_eng, aes(x = distance_m)) +
 jra_results_eng  <- jra_results_eng |> 
     mutate(distance_category = case_when(
         distance_m <= 1400 ~ "sprint",
-        distance_m > 1400 & distance_m <= 1800 ~ "mile",
-        distance_m > 1800 & distance_m <= 2200 ~ "medium",
-        distance_m > 2200 ~ "long"
+        distance_m > 1400 & distance_m <= 2000 ~ "medium",
+        distance_m > 2000 ~ "long"
     ))
+```
+
+```{r}
+# Select famous horses
+hof_list <- c("トウカイテイオー", "オグリキャップ", "メジロマックイーン", "ナリタブライアン", "タイキシャトル", "テイエムオペラオー", "ディープインパクト", "ウオッカ", "エルコンドルパサー", "オルフェーヴル", "ジェンティルドンナ", "ロードカナロア", "キタサンブラック", "アーモンドアイ", "コントレイル", "キングカメハメハ", "スペシャルウィーク", "シンボリクリスエス")
+# Distance specialization
+distance_specialize <- jra_results_eng |> 
+    mutate(won = ifelse(final_position == 1, yes = 1, no = 0)) |> 
+    group_by(horse_name, distance_category) |> 
+    summarise(wins = sum(won, na.rm = TRUE), races = n(), .groups = 'drop') |> 
+
+    mutate(win_rate = wins / races) |> 
+    arrange(desc(win_rate)) |> 
+    filter(horse_name %in% hof_list)
+```
+
+```{r}
+# Distance wins proportion chart
+ggplot(distance_specialize, aes(x = wins, y = horse_name, fill = distance_category)) +
+    geom_col(position = 'fill') +
+    geom_text(aes(label = wins), position = position_fill(vjust = 0.5)) +
+    scale_x_continuous(labels = label_percent())
 ```
 
 ```{r}
@@ -181,9 +241,9 @@ ggplot(times_2000, aes(x = year, y = mean_2000m_win_time_sec)) +
 
 ```{r}
 # Build map function for different race distances
-distances_win_times <- map_dfr(set_names(c(1200, 1600, 2000)), ~{
+distances_win_times <- map_dfr(set_names(c(1200, 1600, 1800, 2000)), ~{
     jra_results_eng |> 
-        filter(distance_m == .x, final_position == 1) |> 
+        filter(distance_m == .x, final_position == 1, turf_dirt == "芝") |> 
         group_by(year) |> 
         summarise(mean_win_time_sec = mean(finish_time, na.rm = TRUE))
 }, .id = "distance_m")
@@ -192,8 +252,6 @@ ggplot(distances_win_times, aes(year, mean_win_time_sec)) +
     geom_point() +
     facet_wrap(~distance_m, scales = "free_y")
 ```
-
-For the above plot, must consider dirt vs turf times?
 
 ```{r}
 # Pivot to long for this step
@@ -229,6 +287,24 @@ jra_results_long |>
 
 # Pace
 jra_results_long |> 
+    filter(race_name == "有馬記念" & year == 1990) |> 
+    ggplot(aes(x = corner_number, y = factor(position), group = horse_name, color = horse_name)) +
+    geom_line(linewidth = 1.5) +
+
+    # Reverse y-axis for more intuitive plot
+    scale_y_discrete(limits = rev) +
+
+    #Highlight winner
+    gghighlight(horse_name == "オグリキャップ", 
+    label_params = list(
+        nudge_x = -1.5, nudge_y = 1
+    ), 
+    use_group_by = FALSE) +
+    
+    theme(axis.title.x = element_blank())
+
+# Late
+jra_results_long |> 
     filter(race_name == "有馬記念" & year == 1993) |> 
     ggplot(aes(x = corner_number, y = factor(position), group = horse_name, color = horse_name)) +
     geom_line(linewidth = 1.5) +
@@ -245,9 +321,23 @@ jra_results_long |>
     
     theme(axis.title.x = element_blank())
 
-# Late
-
 # End
+jra_results_long |> 
+    filter(race_name == "有馬記念" & year == 2012) |> 
+    ggplot(aes(x = corner_number, y = factor(position), group = horse_name, color = horse_name)) +
+    geom_line(linewidth = 1.5) +
+
+    # Reverse y-axis for more intuitive plot
+    scale_y_discrete(limits = rev) +
+
+    # Highlight winner
+    gghighlight(horse_name == "ゴールドシップ", 
+    label_params = list(
+        nudge_x = -1.5, nudge_y = 1
+    ), 
+    use_group_by = FALSE) +
+    
+    theme(axis.title.x = element_blank())
 ```
 
 ```{r}
@@ -265,6 +355,8 @@ ggplot(ak_93_long, aes(corner_number, factor(position), group = horse_name, colo
     gghighlight::gghighlight(horse_name == "トウカイテイオー") +
     theme_minimal()
 ```
+
+### Race Winrates
 
 ```{r}
 # All Arima Kinen, favorite to win & actual win
@@ -292,28 +384,61 @@ all_arima_kinen <- jra_results_eng |>
 ```
 
 ```{r}
-# All AK winrate
+# Number one favorite winrate
 all_arima_kinen |> 
     filter(popular_rank == 1) |> 
     summarise(win_rate = mean(final_position == 1, na.rm = TRUE))
+
+# Number two favorite winrate
+all_arima_kinen |> 
+    filter(popular_rank == 2) |> 
+    summarise(win_rate = mean(final_position == 1, na.rm = TRUE))
+
+# Number three favorite winrate
+all_arima_kinen |> 
+    filter(popular_rank == 3) |> 
+    summarise(win_rate = mean(final_position == 1, na.rm = TRUE))
 ```
 
-According to the above calculation, at the annual Arima Kinen, the number one favorite has won 41.2% of the time.
+According to the above calculation, at the annual Arima Kinen:
+- The number one favorite has won 41.2% of the time.
+- The number two favorite, 14.3%.
+- The number three favorite, 5.88%.
+
+Can write a function / map to extend this to other G1 races?
 
 ```{r}
-# All AK, favorite rank vs final position
-ggplot(all_arima_kinen, aes(popular_rank, final_position)) +
-    geom_point()
+# Create function to feed into map
+find_winrates <- function(data, race, graded = "G1"){
+    # Filter to race
+    race_only <- data |> 
+        filter(race_name == race)
+
+    # Various favorite's winrates
+    map_dfr(1:3, ~{
+        race_only |> 
+            filter(popular_rank == .x) |> 
+            summarise(win_rate = mean(final_position == 1, na.rm = TRUE), race_name = race)
+    }, .id = 'popular_rank') 
+}
+
+# find_winrates(jra_results_eng, race = "有馬記念")
 ```
 
 ```{r}
-# Gender compostion
-jra_results_eng |> 
-    group_by(horse_sex) |> 
-    summarise(sexcount = n()) |> 
-    ggplot(aes(horse_sex, sexcount)) +
-    geom_bar(stat = 'identity')
+# Call function on race list
+race_list <- c("天皇賞(春)", "天皇賞(秋)", "有馬記念", "ジャパンカップ", "宝塚記念", "東京優駿")
+winrate_df <- map_dfr(race_list, ~{
+    find_winrates(jra_results_eng, race = .x)
+})
 ```
+
+```{r}
+ggplot(winrate_df, aes(race_name, win_rate, fill = popular_rank)) +
+    geom_col()
+```
+
+### Fastest Horse in a Year?
 
 # EDA Questions
 
