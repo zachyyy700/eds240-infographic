@@ -112,11 +112,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load packages</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(jtools)</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(gghighlight)</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(scales)</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(polyglotr)</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(patchwork)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(gghighlight)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(scales)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(patchwork)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load data, parsing certain columns as character</span></span>
@@ -128,7 +126,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="co"># jra_odds &lt;- read_csv(here::here("data", "19860105-20210731_odds.csv"))</span></span>
 <span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="co"># jra_laptime &lt;- read_csv(here::here("data", "19860105-20210731_laptime.csv"),</span></span>
 <span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="co"># col_types = cols(.default = 'c'))</span></span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="co"># jra_cornerpassing &lt;- read_csv(here::here("data", "20020615-20210731_corner_passing_order.csv"))</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="co"># jra_cornerpassing &lt;- read_csv(here::here("data", "20020615-20210731_corner_passing_order.csv"))</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>colors <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"#A4252A"</span>, <span class="st">"#E74A22"</span>, <span class="st">"#F4BA1F"</span>, <span class="st">"#F8F360"</span>, <span class="st">"#4392CE"</span>, <span class="st">"#F9D1C5"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <section id="initial-wrangling" class="level2">
 <h2 class="anchored" data-anchor-id="initial-wrangling">Initial Wrangling</h2>
@@ -188,6 +187,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </div>
+</section>
+<section id="sex-summary" class="level3">
+<h3 class="anchored" data-anchor-id="sex-summary">Sex Summary</h3>
+<p>What’s the distribution of horse gender?</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Gender compostion</span></span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>jra_results_eng <span class="sc">|&gt;</span> </span>
@@ -377,12 +380,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="horse-age-vs-performance" class="level3">
 <h3 class="anchored" data-anchor-id="horse-age-vs-performance">Horse Age vs Performance</h3>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Age effects on performance (top3 placement)</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Age effects on performance (top2 placement)</span></span>
 <span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>jra_results_eng <span class="sc">|&gt;</span> </span>
-<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">placed_top3 =</span> <span class="fu">ifelse</span>(final_position <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>), <span class="dv">1</span>, <span class="dv">0</span>)) <span class="sc">|&gt;</span> </span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">placed_top2 =</span> <span class="fu">ifelse</span>(final_position <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">2</span>), <span class="dv">1</span>, <span class="dv">0</span>)) <span class="sc">|&gt;</span> </span>
 <span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">group_by</span>(horse_age) <span class="sc">|&gt;</span> </span>
-<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">summarise</span>(<span class="at">perc_top3 =</span> <span class="fu">mean</span>(placed_top3, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)) <span class="sc">|&gt;</span> </span>
-<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">ggplot</span>(<span class="fu">aes</span>(horse_age, perc_top3)) <span class="sc">+</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">summarise</span>(<span class="at">perc_top2 =</span> <span class="fu">mean</span>(placed_top2, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)) <span class="sc">|&gt;</span> </span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">ggplot</span>(<span class="fu">aes</span>(horse_age, perc_top2)) <span class="sc">+</span></span>
 <span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_point</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div>
@@ -392,10 +395,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </div>
-<p>In this horse age vs top 3 percentage, it could be suffering from the same bias as the above.</p>
+<p>In this horse age vs top 2 percentage, it could be suffering from the same bias as the above.</p>
 </section>
-<section id="race-distance-explorations" class="level3">
-<h3 class="anchored" data-anchor-id="race-distance-explorations">Race Distance Explorations</h3>
+<section id="race-distance-specialization" class="level3">
+<h3 class="anchored" data-anchor-id="race-distance-specialization">Race Distance Specialization</h3>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># include: true</span></span>
 <span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="co"># See distance distribution</span></span>
@@ -463,6 +466,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </div>
+</section>
+<section id="change-in-win-times-over-time" class="level3">
+<h3 class="anchored" data-anchor-id="change-in-win-times-over-time">Change in Win Times over Time</h3>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Different distances, average first place finish time over time</span></span>
 <span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>times_2000 <span class="ot">&lt;-</span> jra_results_eng <span class="sc">|&gt;</span> </span>
@@ -492,7 +498,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(distances_win_times, <span class="fu">aes</span>(year, mean_win_time_sec)) <span class="sc">+</span></span>
 <span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_point</span>() <span class="sc">+</span></span>
-<span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">facet_wrap</span>(<span class="sc">~</span>distance_m, <span class="at">scales =</span> <span class="st">"free_y"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">facet_wrap</span>(<span class="sc">~</span>distance_m, <span class="at">scales =</span> <span class="st">"free_y"</span>) <span class="sc">+</span></span>
+<span id="cb24-12"><a href="#cb24-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-13"><a href="#cb24-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Year"</span>, <span class="at">y =</span> <span class="st">"Win Time (seconds)"</span>, <span class="at">title =</span> <span class="st">"Trend in Average Win Times by Race Distance"</span>) <span class="sc">+</span></span>
+<span id="cb24-14"><a href="#cb24-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-15"><a href="#cb24-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme_minimal</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
@@ -502,6 +512,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <p>I like this plot because it shows average win times are getting faster, however I made the y scales to not start at zero which is kind-of a nono. When they do start at zero, the line is flat-looking with just a slightly negative trend because of the ever-so-slightly faster times throughout the years. Debating this one.</p>
+</section>
+<section id="running-strategies" class="level3">
+<h3 class="anchored" data-anchor-id="running-strategies">Running Strategies</h3>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Pivot to long for this step</span></span>
 <span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>jra_results_long <span class="ot">&lt;-</span> jra_results_eng <span class="sc">|&gt;</span> </span>
@@ -511,13 +524,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Write function to create subplot</span></span>
-<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>create_horse_subplot <span class="ot">&lt;-</span> <span class="cf">function</span>(data_long, race_name_input, year_input, horse_name_input){</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>create_horse_subplot <span class="ot">&lt;-</span> <span class="cf">function</span>(data_long, <span class="at">race_name_input =</span> <span class="st">"有馬記念"</span>, year_input, horse_name_input, plot_title_input, highlight_label){</span>
 <span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>    data_long <span class="sc">|&gt;</span> </span>
 <span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>        <span class="fu">filter</span>(race_name <span class="sc">==</span> race_name_input <span class="sc">&amp;</span> year <span class="sc">==</span> year_input) <span class="sc">|&gt;</span> </span>
 <span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>        <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> corner_number, <span class="at">y =</span> <span class="fu">factor</span>(position), <span class="at">group =</span> horse_name, <span class="at">color =</span> horse_name)) <span class="sc">+</span></span>
 <span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>        <span class="fu">geom_line</span>(<span class="at">linewidth =</span> <span class="fl">1.5</span>) <span class="sc">+</span></span>
 <span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a>        <span class="fu">labs</span>(<span class="at">y =</span> <span class="st">"Race Position"</span>, <span class="at">title =</span> <span class="st">"Running Strategies"</span>) <span class="sc">+</span></span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a>        <span class="fu">labs</span>(<span class="at">y =</span> <span class="st">"Race Position"</span>, <span class="at">title =</span> plot_title_input) <span class="sc">+</span></span>
 <span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Reverse y-axis for more intuitive plot</span></span>
 <span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a>        <span class="fu">scale_y_discrete</span>(<span class="at">limits =</span> rev) <span class="sc">+</span></span>
@@ -531,7 +544,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb26-19"><a href="#cb26-19" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Highlight winner</span></span>
 <span id="cb26-20"><a href="#cb26-20" aria-hidden="true" tabindex="-1"></a>        <span class="fu">gghighlight</span>(horse_name <span class="sc">==</span> horse_name_input, </span>
 <span id="cb26-21"><a href="#cb26-21" aria-hidden="true" tabindex="-1"></a>        <span class="at">label_params =</span> <span class="fu">list</span>(</span>
-<span id="cb26-22"><a href="#cb26-22" aria-hidden="true" tabindex="-1"></a>            <span class="at">nudge_x =</span> <span class="sc">-</span><span class="fl">1.5</span>, <span class="at">nudge_y =</span> <span class="dv">1</span></span>
+<span id="cb26-22"><a href="#cb26-22" aria-hidden="true" tabindex="-1"></a>            <span class="at">nudge_x =</span> <span class="sc">-</span><span class="fl">1.5</span>, <span class="at">nudge_y =</span> <span class="sc">-</span><span class="dv">5</span>, <span class="at">label =</span> highlight_label</span>
 <span id="cb26-23"><a href="#cb26-23" aria-hidden="true" tabindex="-1"></a>        ), </span>
 <span id="cb26-24"><a href="#cb26-24" aria-hidden="true" tabindex="-1"></a>        <span class="at">use_group_by =</span> <span class="cn">FALSE</span>) <span class="sc">+</span></span>
 <span id="cb26-25"><a href="#cb26-25" aria-hidden="true" tabindex="-1"></a>        </span>
@@ -539,12 +552,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb26-27"><a href="#cb26-27" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>plot_front <span class="ot">&lt;-</span> <span class="fu">create_horse_subplot</span>(jra_results_long, <span class="st">"有馬記念"</span>, <span class="dv">2017</span>, <span class="st">"キタサンブラック"</span>)</span>
-<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>plot_pace <span class="ot">&lt;-</span> <span class="fu">create_horse_subplot</span>(jra_results_long, <span class="st">"有馬記念"</span>, <span class="dv">1990</span>, <span class="st">"オグリキャップ"</span>)</span>
-<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>plot_late <span class="ot">&lt;-</span> <span class="fu">create_horse_subplot</span>(jra_results_long, <span class="st">"有馬記念"</span>, <span class="dv">1993</span>, <span class="st">"トウカイテイオー"</span>)</span>
-<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>plot_end <span class="ot">&lt;-</span> <span class="fu">create_horse_subplot</span>(jra_results_long, <span class="st">"有馬記念"</span>, <span class="dv">2012</span>, <span class="st">"ゴールドシップ"</span>)</span>
-<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>(plot_front <span class="sc">+</span> plot_pace) <span class="sc">/</span> (plot_late <span class="sc">+</span> plot_end)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>plot_front <span class="ot">&lt;-</span> <span class="fu">create_horse_subplot</span>(jra_results_long, <span class="at">year_input =</span> <span class="dv">2017</span>, <span class="at">horse_name_input =</span> <span class="st">"キタサンブラック"</span>, <span class="at">plot_title_input =</span> <span class="st">"Strategy: Front"</span>, <span class="at">highlight_label =</span> <span class="st">"Kitasan Black"</span>)</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>plot_pace <span class="ot">&lt;-</span> <span class="fu">create_horse_subplot</span>(jra_results_long, <span class="at">year_input =</span> <span class="dv">1993</span>, <span class="at">horse_name_input =</span> <span class="st">"トウカイテイオー"</span>, <span class="at">plot_title_input =</span> <span class="st">"Strategy: Late"</span>, <span class="at">highlight_label =</span> <span class="st">"Tokai Teio"</span>)</span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>plot_end <span class="ot">&lt;-</span> <span class="fu">create_horse_subplot</span>(jra_results_long, <span class="at">year_input =</span> <span class="dv">2012</span>, <span class="at">horse_name_input =</span> <span class="st">"ゴールドシップ"</span>, <span class="at">plot_title_input =</span> <span class="st">"Strategy: End"</span>, <span class="at">highlight_label =</span> <span class="st">"Goldship"</span>)</span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a>plot_front <span class="sc">/</span> plot_pace <span class="sc">/</span> plot_end</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
@@ -553,9 +567,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </div>
+<p>In addition to distance specialties, it’s common for certain horses to also have preferred running strategies. Front-runners grab the lead early and defend it throughout the race. Pace chasers sit behind the crowd, read the situation, and battle for first at the last stretch. While end closers, hang towards the back, save their energy and give it their all towards the last corners.</p>
 </section>
 <section id="favorite-winrates" class="level3">
 <h3 class="anchored" data-anchor-id="favorite-winrates">Favorite Winrates</h3>
+<p>The Arima Kinen (有馬記念) is one of two “All-Star” races throughout the year and is considered one of the world’s most popular horserace. Additionally, this race also allows for racing fans themselves to select the horses which enter and run, based on popular vote.</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="co"># All Arima Kinen</span></span>
 <span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>all_arima_kinen <span class="ot">&lt;-</span> jra_results_eng <span class="sc">|&gt;</span> </span>
@@ -576,7 +592,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 3            3   0.0588</code></pre>
 </div>
 </div>
-<p>According to the above calculation, at the annual Arima Kinen: - The number one favorite has won 41.2% of the time. - The number two favorite, 14.3%. - The number three favorite, 5.88%.</p>
+<p>According to the above calculation, at the annual Arima Kinen:</p>
+<ul>
+<li><p>The number one favorite has won 41.2% of the time.</p></li>
+<li><p>The number two favorite, 14.3%.</p></li>
+<li><p>The number three favorite, 5.88%.</p></li>
+</ul>
 <p>Can write a function / map to extend this to other G1 races?</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create function to feed into map</span></span>
@@ -604,10 +625,16 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(winrate_df, <span class="fu">aes</span>(race_name, win_rate, <span class="at">fill =</span> popular_rank)) <span class="sc">+</span></span>
-<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_col</span>() <span class="sc">+</span></span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_col</span>(<span class="at">position =</span> <span class="st">'dodge'</span>) <span class="sc">+</span></span>
 <span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">scale_x_discrete</span>(<span class="at">labels =</span> <span class="fu">c</span>(<span class="st">"Japan Cup"</span>, <span class="st">"Tenno Sho (Spring)"</span>, <span class="st">"Tenno Sho (Autumn)"</span>, <span class="st">"Takarazuka Kinen"</span>, <span class="st">"Arima Kinen"</span>, <span class="st">"Tokyo Yushun"</span>)) <span class="sc">+</span></span>
 <span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Race Name"</span>, <span class="at">y =</span> <span class="st">"Win Rate"</span>, <span class="at">fill =</span> <span class="st">"Popular Rank"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Race Name"</span>, <span class="at">y =</span> <span class="st">"Win Rate"</span>, <span class="at">fill =</span> <span class="st">"Favorite-to-Win"</span>) <span class="sc">+</span></span>
+<span id="cb33-6"><a href="#cb33-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-7"><a href="#cb33-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">"#1982c4"</span>, <span class="st">"#8ac926"</span>, <span class="st">"#ff595e"</span>)) <span class="sc">+</span></span>
+<span id="cb33-8"><a href="#cb33-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-9"><a href="#cb33-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">scale_y_continuous</span>(<span class="at">labels =</span> <span class="fu">label_percent</span>()) <span class="sc">+</span></span>
+<span id="cb33-10"><a href="#cb33-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-11"><a href="#cb33-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme_minimal</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
@@ -617,18 +644,84 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </section>
-<section id="fastest-horse-in-a-year" class="level3">
-<h3 class="anchored" data-anchor-id="fastest-horse-in-a-year">Fastest Horse in a Year?</h3>
+<section id="prize-money-scale" class="level3">
+<h3 class="anchored" data-anchor-id="prize-money-scale">Prize Money Scale</h3>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>prize_money <span class="ot">&lt;-</span> jra_results_eng <span class="sc">|&gt;</span> </span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(listed_graded_race <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"G1"</span>, <span class="st">"G2"</span>, <span class="st">"G3"</span>), final_position <span class="sc">==</span> <span class="dv">1</span>, year <span class="sc">!=</span> <span class="dv">2021</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">group_by</span>(year, listed_graded_race) <span class="sc">|&gt;</span> </span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">summarise</span>(<span class="at">mean_prize_10kY =</span> <span class="fu">mean</span>(prize_money_10kY, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">max_prize_10kY =</span> <span class="fu">max</span>(prize_money_10kY, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">min_prize_10kY =</span> <span class="fu">min</span>(prize_money_10kY, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)) <span class="sc">|&gt;</span> </span>
+<span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">ungroup</span>() <span class="sc">|&gt;</span> </span>
+<span id="cb34-8"><a href="#cb34-8" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb34-9"><a href="#cb34-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">date =</span> <span class="fu">as_date</span>(<span class="fu">paste</span>(year, <span class="st">"01"</span>, <span class="st">"01"</span>, <span class="at">sep =</span> <span class="st">"-"</span>)))</span>
+<span id="cb34-10"><a href="#cb34-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-11"><a href="#cb34-11" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(prize_money, <span class="fu">aes</span>(year, max_prize_10kY, <span class="at">group =</span> listed_graded_race, <span class="at">color =</span> listed_graded_race)) <span class="sc">+</span></span>
+<span id="cb34-12"><a href="#cb34-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_line</span>() <span class="sc">+</span></span>
+<span id="cb34-13"><a href="#cb34-13" aria-hidden="true" tabindex="-1"></a>    <span class="co"># geom_ribbon(aes(ymax = max_prize_10kY, ymin = min_prize_10kY), alpha = 0.5) +</span></span>
+<span id="cb34-14"><a href="#cb34-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-15"><a href="#cb34-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Year"</span>, <span class="at">y =</span> <span class="st">"Maximum Prize (thousands of ¥)"</span>, <span class="at">title =</span> <span class="st">"Maximum 1st Prize Over Time"</span>, <span class="at">color =</span> <span class="st">"Race Grade"</span>) <span class="sc">+</span></span>
+<span id="cb34-16"><a href="#cb34-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-17"><a href="#cb34-17" aria-hidden="true" tabindex="-1"></a>    <span class="fu">annotate</span>(<span class="at">geom =</span> <span class="st">'curve'</span>, <span class="at">x =</span> <span class="dv">2018</span>, <span class="at">xend =</span> <span class="dv">2020</span>, <span class="at">y =</span> <span class="dv">26000</span>, <span class="at">yend =</span> <span class="dv">30000</span>, <span class="at">arrow =</span> <span class="fu">arrow</span>()) <span class="sc">+</span></span>
+<span id="cb34-18"><a href="#cb34-18" aria-hidden="true" tabindex="-1"></a>    <span class="fu">annotate</span>(<span class="at">geom =</span> <span class="st">'label'</span>, <span class="at">x =</span> <span class="dv">2018</span>, <span class="at">y =</span> <span class="dv">25000</span>, <span class="at">label =</span> <span class="st">"~ $2M USD!"</span>) <span class="sc">+</span></span>
+<span id="cb34-19"><a href="#cb34-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-20"><a href="#cb34-20" aria-hidden="true" tabindex="-1"></a>    <span class="fu">scale_x_continuous</span>(<span class="at">breaks =</span> <span class="fu">seq</span>(<span class="dv">1985</span>, <span class="dv">2020</span>, <span class="at">by =</span> <span class="dv">5</span>)) <span class="sc">+</span></span>
+<span id="cb34-21"><a href="#cb34-21" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb34-22"><a href="#cb34-22" aria-hidden="true" tabindex="-1"></a>    <span class="fu">scale_y_continuous</span>(<span class="at">labels =</span> <span class="fu">label_comma</span>(<span class="at">scale =</span> <span class="dv">10</span>)) <span class="sc">+</span></span>
+<span id="cb34-23"><a href="#cb34-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-24"><a href="#cb34-24" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme_classic</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="exploration_files/figure-html/unnamed-chunk-32-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="track-bias" class="level3">
+<h3 class="anchored" data-anchor-id="track-bias">Track Bias</h3>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Filter to winners, aggregate by post number and calculate total wins</span></span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>post_wins <span class="ot">&lt;-</span> jra_results_eng <span class="sc">|&gt;</span> </span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(final_position <span class="sc">==</span> <span class="dv">1</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">group_by</span>(horse_number) <span class="sc">|&gt;</span> </span>
+<span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">summarise</span>(<span class="at">total_wins =</span> <span class="fu">n</span>())</span>
+<span id="cb35-6"><a href="#cb35-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-7"><a href="#cb35-7" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(post_wins, <span class="fu">aes</span>(<span class="at">x =</span> <span class="fu">factor</span>(horse_number), <span class="at">y =</span> total_wins)) <span class="sc">+</span></span>
+<span id="cb35-8"><a href="#cb35-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_point</span>() <span class="sc">+</span></span>
+<span id="cb35-9"><a href="#cb35-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-10"><a href="#cb35-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Horse Number"</span>, <span class="at">y =</span> <span class="st">"Total Wins"</span>, <span class="at">title =</span> <span class="st">"Start Position vs Total Wins"</span>, <span class="at">subtitle =</span> <span class="st">"Horses on the inside post have a higher amount of wins."</span>, <span class="at">caption =</span> <span class="st">"Increase in horse number correlates to outer starting position"</span>) <span class="sc">+</span></span>
+<span id="cb35-11"><a href="#cb35-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-12"><a href="#cb35-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme_minimal</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="exploration_files/figure-html/unnamed-chunk-33-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
 </section>
 </section>
 </section>
 <section id="eda-questions" class="level1">
 <h1>EDA Questions</h1>
 <ol type="1">
-<li><p>What have you learned about your data? Have any potentially interesting patterns emerged? Point to specific visualizations that you created as you describe your findings.</p></li>
-<li><p>In FPM #1, you outlined some questions that you wanted to answer using these data. Have you made any strides towards answering those questions? If yes, how so? If no, what next steps do you need to take (e.g.&nbsp;I need to create X plot type, I still need to track down Y data, I need to restructure existing data so that you can visualize it in Z ways, etc.)? Have any new questions emerged?</p></li>
-<li><p>What challenges do you foresee encountering with your data? These can be data wrangling and / or visualization challenges.</p></li>
+<li>What have you learned about your data? Have any potentially interesting patterns emerged? Point to specific visualizations that you created as you describe your findings.</li>
 </ol>
+<ul>
+<li>So far, I’ve learned that this horse data is very comprehensive and complex. Early in the exploration I learned about duplicate horses, horses that are named the same name but are completely different horses. Then I learned how horses who run few races but win, can skew win percentages, especially when looking at outlier weights &amp; ages. I’m finding the need to standardize/normalize some things. For example, my horse age distribution and horse age win percentage. In the age distribution, most horses are 3-5 years old, in the win percentage by horse age, there’s also a high amount of horses in that age range placing top 3. It’s quite possible that because there are a lot of horses in this age range, there will be more wins in this age range. As far as interesting patterns, I think the win times over time are cool, showing that horses are “getting faster” and that records for certain distances are consistently being set.</li>
+</ul>
+<ol start="2" type="1">
+<li>In FPM #1, you outlined some questions that you wanted to answer using these data. Have you made any strides towards answering those questions? If yes, how so? If no, what next steps do you need to take (e.g.&nbsp;I need to create X plot type, I still need to track down Y data, I need to restructure existing data so that you can visualize it in Z ways, etc.)? Have any new questions emerged?</li>
+</ol>
+<p>My first question was about what summary statistics can be extracted and for the most part I answered this with weather, age, and gender composition of our data. Another question I was interested in was if there was any attribute that would give horses an advantage to win over another. I looked at weight and age but they don’t seem to be good predictors and the amount of races entered by each horse aren’t all the same. This was pretty expected as I don’t think weight nor age would give a competitive edge. Additionally, I wanted to investigate track bias in horse racing, where horses on the inside ‘run less’ than horses on the outside due to the circular track. Even though horses can move left and right after the start, there still seems to be some type of track bias. Though, I did this graph hastily so maybe the aggregation is incorrect in some way but to be investigated further!</p>
+<ol start="3" type="1">
+<li>What challenges do you foresee encountering with your data? These can be data wrangling and / or visualization challenges.</li>
+</ol>
+<p>Some challenges have been pointed out earlier. While I translated the Japanese columns, the data values themselves are still in Japanese and these don’t show up in a rendered quarto doc. I think that’s one of the biggest issues as I have to manually translate the values but I think the method I’ll stick with is: 1. Filter, aggregate, etc., 2. Create translation dataframe, 3. Plot with English values. One last challenge is aggregation bias. There’s a lot of variation between races, so evaluating things like performance can be affected by this variation.</p>
 </section>
 
 </main>
