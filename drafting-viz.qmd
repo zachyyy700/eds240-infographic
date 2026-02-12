@@ -1,0 +1,156 @@
+---
+author: "Zach Loo"
+---
+
+```{r}
+library(tidyverse)
+library(scales)
+```
+
+# Initial Wrangling
+
+```{r}
+# Load data, parsing certain columns as character
+jra_results <- read_csv(here::here('data', '19860105-20210731_race_result.csv'),
+col_types = cols(レース馬番ID = 'c', レースID = 'c', タイム = 'c')) |> 
+    # Omit レース記号 columns
+    select(-starts_with("レース記号"))
+
+colors <- c("#A4252A", "#E74A22", "#F4BA1F", "#F8F360", "#4392CE", "#52b788", "#F9D1C5")
+
+# Create dataset copy
+jra_results_eng <- jra_results
+
+# Translate df columns
+colnames(jra_results_eng) <- c("race_pp_id", "race_id", "race_date", "race_meeting_number", "racecourse_code", "racecourse_name", "nth_raceday", "race_prereq", "race_number", "graded_race_nth_time", "race_name", "listed_graded_race", "steeplechase", "turf_dirt", "turf_dirt2_steeplechase", "left_right_straight", "inside_outside", "distance_m", "weather", "track_condition1", "track_condition2_steeplechase", "post_time", "final_position", "final_position_notes", "bracket_number", "horse_number", "horse_name", "horse_sex", "horse_age", "jockey_weight", "jockey_name", "finish_time", "margin", "corner1_position", "corner2_position", "corner3_position", "corner4_position", "final_600m_time", "win_odds_100Y", "popular_rank", "horse_weight", "horse_weight_diff", "east_west_foreign", "horse_trainer", "horse_owner", "prize_money_10kY")
+
+# Add year and month columns
+jra_results_eng  <- jra_results_eng |> 
+    mutate(year = year(race_date), month = month(race_date))
+```
+
+# Prize Money Trend
+First place prize money trends over the years, how do the different grades compare?
+
+```{r}
+prize_money_usd <- jra_results_eng |> 
+    mutate(prize_money_usd = prize_money_10kY * 65.34) |> 
+    filter(listed_graded_race %in% c("G1", "G2", "G3"), final_position == 1, year != 2021) |> 
+    group_by(year, listed_graded_race) |> 
+    summarise(
+        mean_prize_usd = mean(prize_money_usd, na.rm = TRUE),
+        max_prize_usd = max(prize_money_usd, na.rm = TRUE)) |> 
+    ungroup() |> 
+
+    mutate(listed_graded_race = factor(listed_graded_race, levels = c("G1", "G2", "G3"))) |> 
+    rename(race_grade = listed_graded_race)
+```
+
+```{r}
+# prize_money <- jra_results_eng |> 
+#     filter(listed_graded_race %in% c("G1", "G2", "G3"), final_position == 1, year != 2021) |> 
+#     group_by(year, listed_graded_race) |> 
+#     summarise(mean_prize_10kY = mean(prize_money_10kY, na.rm = TRUE),
+#     max_prize_10kY = max(prize_money_10kY, na.rm = TRUE),
+#     min_prize_10kY = min(prize_money_10kY, na.rm = TRUE)) |> 
+#     ungroup() |> 
+    
+#     mutate(date = as_date(paste(year, "01", "01", sep = "-"))) 
+```
+
+```{r}
+ggplot(prize_money_usd) +
+    geom_line(aes(year, mean_prize_usd, group = race_grade, color = race_grade, linetype = "Mean"), linewidth = 1.2) +
+    geom_line(aes(year, max_prize_usd, group = race_grade, color = race_grade, linetype = "Max"), alpha = 0.6, linewidth = 0.7) +
+
+    labs(x = "Year", y = "Dollar Amount", title = "Yearly 1st Place Reward Over Time", color = "Race Grade") +
+
+    scale_x_continuous(breaks = seq(1985, 2020, by = 5)) +
+    
+    scale_y_continuous(labels = label_dollar()) +
+
+    scale_linetype_manual(values = c("Mean" = "solid", "Max" = "dashed"), name = "Stat") +
+
+    scale_color_manual(values = c("G1" = colors[5], "G2" = colors[2], "G3" = colors[6])) +
+
+    theme_classic()
+```
+
+# Inner-post Track Bias
+Win rates and horse (or bracket) number, do horses who start on the inside win more than horses on the outside?
+
+```{r}
+# Filter to winners, aggregate by post number and calculate total wins
+post_wins <- jra_results_eng |> 
+    filter(final_position == 1) |> 
+    group_by(horse_number) |> 
+    summarise(total_wins = n())
+
+ggplot(post_wins, aes(x = total_wins, y = factor(horse_number))) +
+    geom_col() +
+
+    labs(x = "Total Wins", y = "Horse Number", title = "Start Position vs Total Wins", subtitle = "Horses on the inside post have a higher amount of wins.", caption = "Increase in horse number correlates to outer starting position") +
+
+    theme_minimal()
+```
+
+# Favorite Win Rates
+Favorite to win & actual winner win rates at different races, how good are fans at predicting the winner?
+
+```{r}
+# Create function to feed into map
+find_winrates <- function(data, race){
+    # Filter to race
+    race_only <- data |> 
+        filter(race_name == race)
+
+    # Various favorite's winrates
+    map_dfr(1:3, ~{
+        race_only |> 
+            filter(popular_rank == .x) |> 
+            summarise(win_rate = mean(final_position == 1, na.rm = TRUE), race_name = race)
+    }, .id = 'popular_rank') 
+}
+
+# Call function on race list
+race_list <- c("天皇賞(春)", "天皇賞(秋)", "有馬記念", "ジャパンカップ", "宝塚記念", "東京優駿")
+winrate_df <- map_dfr(race_list, ~{
+    find_winrates(jra_results_eng, race = .x)
+})
+```
+
+```{r}
+winrate_df <- winrate_df |> 
+    mutate(popular_rank = factor(popular_rank))
+```
+
+```{r}
+ggplot(winrate_df, aes(win_rate, race_name, fill = fct_rev(popular_rank))) +
+    geom_col(position = "dodge") +
+
+    scale_y_discrete(labels = c("Japan Cup", "Tenno Sho (Spring)", "Tenno Sho (Autumn)", "Takarazuka Kinen", "Arima Kinen", "Tokyo Yushun")) +
+    
+    labs(x = "Win Rate", y = "Race", fill = "Favorite-to-Win") +
+
+    scale_fill_manual(values = rev(c("#F4BA1F", "grey", "brown"))) +
+
+    scale_x_continuous(labels = label_percent()) +
+    guides(fill = guide_legend(reverse = TRUE)) +
+    theme_minimal()
+```
+
+# Age Performace Curve
+Win rate and average finish position by horse age, when do horses peak in age?
+
+
+```{r}
+jra_results_eng |> 
+    group_by(horse_age) |> 
+    summarise(
+        total_races = n(),
+        age_win_rate = mean(final_position == 1, na.rm = TRUE),
+        age_avg_finish = mean(final_position, na.rm = TRUE)) |> 
+
+    ggplot(aes(horse_age, age_win_rate)) +
+        geom_point()
+```
