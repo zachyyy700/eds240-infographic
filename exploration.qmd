@@ -512,7 +512,7 @@ ggplot(prize_money, aes(year, max_prize_10kY, group = listed_graded_race, color 
     theme_classic()
 ```
 
-### Track Bias
+### Inner Post Track Bias
 
 ```{r}
 # Filter to winners, aggregate by post number and calculate total wins
@@ -528,6 +528,8 @@ ggplot(post_wins, aes(x = factor(horse_number), y = total_wins)) +
 
     theme_minimal()
 ```
+
+The start position does seem to have an effect on wins. Start positions 1-6 have high wins and has the number increases (outer start position), wins go down. This relationship would only be significant if starting position is assigned at random, not by any other factors.
 
 # EDA Questions
 
