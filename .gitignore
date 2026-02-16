@@ -1,6 +1,6 @@
 # qmd artifacts
 *_files/
-
+*.html
 # Translate files
 translate*
 
