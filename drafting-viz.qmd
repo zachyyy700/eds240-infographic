@@ -5,6 +5,9 @@ author: "Zach Loo"
 ```{r}
 library(tidyverse)
 library(scales)
+library(gghighlight)
+library(patchwork)
+library(ggtext)
 ```
 
 # Initial Wrangling
@@ -23,10 +26,53 @@ jra_results_eng <- jra_results
 
 # Translate df columns
 colnames(jra_results_eng) <- c("race_pp_id", "race_id", "race_date", "race_meeting_number", "racecourse_code", "racecourse_name", "nth_raceday", "race_prereq", "race_number", "graded_race_nth_time", "race_name", "listed_graded_race", "steeplechase", "turf_dirt", "turf_dirt2_steeplechase", "left_right_straight", "inside_outside", "distance_m", "weather", "track_condition1", "track_condition2_steeplechase", "post_time", "final_position", "final_position_notes", "bracket_number", "horse_number", "horse_name", "horse_sex", "horse_age", "jockey_weight", "jockey_name", "finish_time", "margin", "corner1_position", "corner2_position", "corner3_position", "corner4_position", "final_600m_time", "win_odds_100Y", "popular_rank", "horse_weight", "horse_weight_diff", "east_west_foreign", "horse_trainer", "horse_owner", "prize_money_10kY")
+```
 
+```{r}
 # Add year and month columns
 jra_results_eng  <- jra_results_eng |> 
     mutate(year = year(race_date), month = month(race_date))
+
+# # Convert finish time character to duration
+jra_results_eng <-  jra_results_eng |> 
+    mutate(finish_time = as.duration(ms(finish_time)))
+```
+
+```{r}
+# Create function to parse margin column as numeric
+parse_margin <- function(margin) {
+    if (is.na(margin)) return(NA_real_)
+    if (margin == "ハナ") return(0.05)
+    if (margin == "アタマ") return(0.2)
+    if (margin == "クビ") return(0.25)
+    if (margin == "同着") return(0)
+
+    margin <- str_replace(margin,"\\.", " ")
+
+    if (str_detect(margin,"/")) {
+        parts <- str_split(margin, " ")[[1]]
+        if (length(parts) == 2) {
+            # Mixed fraction
+            whole <- as.numeric(parts[1])
+            frac <- str_split(parts[2],"/")[[1]]
+            return(whole + as.numeric(frac[1]) / as.numeric(frac[2]))
+        } else {
+            # Single fraction
+            frac <- str_split(parts[1], "/")[[1]]
+            return(as.numeric(frac[1]) / as.numeric(frac[2]))
+        }
+    }
+    # Otherwise just convert to numeric
+    as.numeric(margin)
+}
+```
+
+```{r}
+# Convert character entries in margin column
+jra_results_margin <- jra_results_eng |> 
+    filter(!str_detect(margin,"\\+") | is.na(margin)) |>  # Keep nas since these are first place horses
+    mutate(margin_parsed = map_dbl(margin, parse_margin), .after = margin)
+
 ```
 
 # Prize Money Trend
@@ -47,18 +93,6 @@ prize_money_usd <- jra_results_eng |>
 ```
 
 ```{r}
-# prize_money <- jra_results_eng |> 
-#     filter(listed_graded_race %in% c("G1", "G2", "G3"), final_position == 1, year != 2021) |> 
-#     group_by(year, listed_graded_race) |> 
-#     summarise(mean_prize_10kY = mean(prize_money_10kY, na.rm = TRUE),
-#     max_prize_10kY = max(prize_money_10kY, na.rm = TRUE),
-#     min_prize_10kY = min(prize_money_10kY, na.rm = TRUE)) |> 
-#     ungroup() |> 
-    
-#     mutate(date = as_date(paste(year, "01", "01", sep = "-"))) 
-```
-
-```{r}
 ggplot(prize_money_usd) +
     geom_line(aes(year, mean_prize_usd, group = race_grade, color = race_grade, linetype = "Mean"), linewidth = 1.2) +
     geom_line(aes(year, max_prize_usd, group = race_grade, color = race_grade, linetype = "Max"), alpha = 0.6, linewidth = 0.7) +
@@ -74,24 +108,6 @@ ggplot(prize_money_usd) +
     scale_color_manual(values = c("G1" = colors[5], "G2" = colors[2], "G3" = colors[6])) +
 
     theme_classic()
-```
-
-# Inner-post Track Bias
-Win rates and horse (or bracket) number, do horses who start on the inside win more than horses on the outside?
-
-```{r}
-# Filter to winners, aggregate by post number and calculate total wins
-post_wins <- jra_results_eng |> 
-    filter(final_position == 1) |> 
-    group_by(horse_number) |> 
-    summarise(total_wins = n())
-
-ggplot(post_wins, aes(x = total_wins, y = factor(horse_number))) +
-    geom_col() +
-
-    labs(x = "Total Wins", y = "Horse Number", title = "Start Position vs Total Wins", subtitle = "Horses on the inside post have a higher amount of wins.", caption = "Increase in horse number correlates to outer starting position") +
-
-    theme_minimal()
 ```
 
 # Favorite Win Rates
@@ -139,18 +155,285 @@ ggplot(winrate_df, aes(win_rate, race_name, fill = fct_rev(popular_rank))) +
     theme_minimal()
 ```
 
-# Age Performace Curve
+# Age Performace
 Win rate and average finish position by horse age, when do horses peak in age?
-
 
 ```{r}
 jra_results_eng |> 
     group_by(horse_age) |> 
     summarise(
         total_races = n(),
-        age_win_rate = mean(final_position == 1, na.rm = TRUE),
-        age_avg_finish = mean(final_position, na.rm = TRUE)) |> 
+        age_win_rate = mean(final_position %in% c(1, 2, 3), na.rm = TRUE)) |> 
 
-    ggplot(aes(horse_age, age_win_rate)) +
-        geom_point()
+    ggplot(aes(age_win_rate, factor(horse_age))) +
+        geom_col() +
+
+        scale_x_continuous(labels = label_percent()) +
+
+        theme_minimal()
+```
+
+# Distance Specialization
+
+```{r}
+# Create distance category
+jra_results_eng <- jra_results_eng |> 
+    mutate(distance_category = case_when(
+        distance_m <= 1400 ~ "sprint",
+        distance_m > 1400 & distance_m <= 2000 ~ "medium", 
+        distance_m > 2000 ~ "long"
+    ))
+
+# Create english names df
+names_translations <- tibble(
+    horse_name = c("トウカイテイオー", "オグリキャップ", "ナリタブライアン", 
+                 "タイキシャトル", "テイエムオペラオー", "ウオッカ", 
+                 "エルコンドルパサー", "ロードカナロア", "キタサンブラック"),
+    horse_name_eng = c("Tokai Teio", "Oguri Cap", "Narita Brian", 
+                     "Taiki Shuttle", "T.M. Opera O", "Vodka", 
+                     "El Condor Pasa", "Lord Kanaloa", "Kitasan Black")
+)
+```
+
+```{r}
+# Left join on english dataframe
+jra_results_eng <- left_join(jra_results_eng, names_translations, by = "horse_name")
+```
+
+```{r}
+# Distance specialization
+distance_specialize <- jra_results_eng |> 
+    mutate(won = ifelse(final_position == 1, yes = 1, no = 0)) |> 
+    group_by(horse_name_eng, distance_category) |> 
+    summarise(wins = sum(won, na.rm = TRUE), races = n(), .groups = 'drop') |> 
+
+    mutate(win_rate = wins / races) |> 
+    arrange(desc(win_rate)) |> 
+    filter(horse_name_eng %in% names_translations$horse_name_eng) 
+```
+
+```{r}
+ggplot(distance_specialize, aes(x = wins, y = horse_name_eng, fill = distance_category)) +
+    geom_col(position = 'fill') +
+    geom_text(aes(label = wins), position = position_fill(vjust = 0.5)) +
+    scale_x_continuous(labels = label_percent()) +
+
+    labs(title = "Distance Specialization", subtitle = "Horses specialize in distance categories throughout their career.", x = "Win Percentage", y = "Horse Name", fill = "Category") +
+    
+    scale_fill_manual(values = c("#1982c4", "#8ac926", "#ff595e")) +
+    theme_minimal()
+```
+
+# Runner Strategies
+The "Path to Victory".
+
+```{r}
+# Pivot corner columns 
+jra_results_long <- jra_results_eng |> 
+    pivot_longer(cols = c(corner1_position:corner4_position, final_position),
+    names_to = "corner_number", names_pattern = "(.*)_position",
+    values_to = "position")
+```
+
+```{r}
+# Write function to create subplot
+create_horse_subplot <- function(data_long, race_name_input = "有馬記念", year_input, horse_name_input, plot_title_input, highlight_label){
+    data_long |> 
+        filter(race_name == race_name_input & year == year_input) |> 
+        ggplot(aes(x = corner_number, y = factor(position), group = horse_name, color = horse_name)) +
+        geom_line(linewidth = 1.5) +
+
+        labs(y = "Race Position", title = plot_title_input) +
+
+        # Reverse y-axis for more intuitive plot
+        scale_y_discrete(limits = rev) +
+
+        # Finish line
+        geom_vline(aes(xintercept = "final"), color = "black", linewidth = 1.2, linetype = "dashed") +
+
+        #geom_label(aes(x = "final", y = 2), label = "Finish") +
+        theme_minimal() +
+
+        # Highlight winner
+        gghighlight(horse_name == horse_name_input, 
+        label_params = list(
+            nudge_x = -1.5, nudge_y = -5, label = highlight_label
+        ), 
+        use_group_by = FALSE) +
+        
+        theme(axis.title.x = element_blank())
+}
+```
+
+```{r}
+plot_front <- create_horse_subplot(jra_results_long, year_input = 2017, horse_name_input = "キタサンブラック", plot_title_input = "Strategy: Front", highlight_label = "Kitasan Black")
+
+plot_pace <- create_horse_subplot(jra_results_long, year_input = 1993, horse_name_input = "トウカイテイオー", plot_title_input = "Strategy: Late", highlight_label = "Tokai Teio")
+
+plot_end <- create_horse_subplot(jra_results_long, year_input = 2012, horse_name_input = "ゴールドシップ", plot_title_input = "Strategy: End", highlight_label = "Goldship")
+
+plot_front / plot_pace / plot_end
+```
+
+# Arima Kinen Winners
+
+```{r}
+# Filter to Arima Kinen & select columns of interest
+arima_kinen_data <- jra_results_eng |> 
+    filter(race_name == "有馬記念", final_position == 1) |> 
+    select(race_date, distance_m, horse_number, horse_name, horse_age, finish_time, final_600m_time, win_odds_100Y, popular_rank, prize_money_10kY, prize_money_usd, year, horse_trainer, horse_owner)
+
+ak_margins <- jra_results_margin |> 
+    filter(race_name == "有馬記念", final_position == 2) |> 
+    select(race_date, horse_name, year, margin, margin_parsed) |> 
+    mutate(n = row_number())
+```
+
+```{r}
+# Create df of recent data to include recent place
+ak_margins_recent <- tibble(
+    race_date = c("2021-12-26", "2022-12-25", "2023-12-24", "2024-12-22", "2025-12-28"),
+    horse_name = c("ディープボンド", "ボルドグフーシュ", "スターズオンアース", "シャフリヤール", "コスモキュランダ"),
+    year = c(2021, 2022, 2023, 2024, 2025),
+    margin = c("3/4", "2.1/2", "1/2", "ハナ", "1/2")
+) |> 
+    mutate(race_date = as.Date(race_date), margin_parsed = map_dbl(margin,parse_margin))
+
+ak_margins_all <- bind_rows(ak_margins, ak_margins_recent) |> 
+    mutate(n = row_number())
+```
+
+```{r}
+# Create df of recent data to include recent winnersdue to outdated data
+arima_kinen_recent <- tibble(
+    race_date = c("2021-12-26", "2022-12-25", "2023-12-24", "2024-12-22", "2025-12-28"),
+    distance_m = c(2500),
+    horse_number = c(10, 9, 5, 8, 4),
+    horse_name = c("エフフォーリア", "イクイノックス", "ドウデュース", "レガレイラ", "ミュージアムマイル"),
+    horse_age = c(3, 3, 4, 3, 3),
+    finish_time = c("2:32.0", "2:32.4", "2:30.9", "2:31.8", "2:31.5"),
+    final_600m_time = c(35.9, 35.4, 34.3, 34.9, 34.6),
+    win_odds_100Y = c(2.1, 2.3, 5.2, 10.9, 3.8),
+    popular_rank = c(1, 1, 2, 5, 3),
+    prize_money_10kY = c(30336.0, 40336.0, 50340.2, 50340.2, 50352.8), 
+    year = c(2021, 2022, 2023, 2024, 2025),
+    horse_trainer = c("鹿戸雄一", "木村哲也", "友道康夫", "木村哲也", "高柳大輔"),
+    horse_owner = c("キャロットファーム", "シルクレーシング", "キーファーズ", "サンデーレーシング", "サンデーレーシング")
+) |> 
+    mutate(
+        race_date = as.Date(race_date),
+        finish_time = as.duration(ms(finish_time)))
+```
+
+```{r}
+# Add new rows to outdated data
+arima_kinen_all  <- bind_rows(arima_kinen_data, arima_kinen_recent) |> 
+    mutate(
+        n = row_number(), 
+        annot = ifelse(n %% 5 == 0 & n != n(), TRUE, FALSE),
+        avg_speed_m_s = distance_m / as.numeric(finish_time)) |> 
+
+    mutate(popular_rank_rev = abs(popular_rank - 16), .after = popular_rank)
+```
+
+```{r}
+# Create translation df
+ak_names <- tibble(
+  horse_name = c(
+    "ダイナガリバー", "メジロデュレン", "オグリキャップ", "イナリワン", "ダイユウサク",
+    "メジロパーマー", "トウカイテイオー", "ナリタブライアン", "マヤノトップガン", "サクラローレル",
+    "シルクジャスティス", "グラスワンダー", "テイエムオペラオー", "マンハッタンカフェ", "シンボリクリスエス",
+    "ゼンノロブロイ", "ハーツクライ", "ディープインパクト", "マツリダゴッホ", "ダイワスカーレット",
+    "ドリームジャーニー", "ヴィクトワールピサ", "オルフェーヴル", "ゴールドシップ", "ジェンティルドンナ",
+    "ゴールドアクター", "サトノダイヤモンド", "キタサンブラック", "ブラストワンピース", "リスグラシュー",
+    "クロノジェネシス", "エフフォーリア", "イクイノックス", "ドウデュース", "レガレイラ",
+    "ミュージアムマイル"
+  ),
+  horse_name_eng = c(
+    "Dyna Gulliver", "Mejiro Durren", "Oguri Cap", "Inari One", "Daiyu Saku",
+    "Mejiro Palmer", "Tokai Teio", "Narita Brian", "Mayano Top Gun", "Sakura Laurel",
+    "Silk Justice", "Grass Wonder", "T M Opera O", "Manhattan Cafe", "Symboli Kris S",
+    "Zenno Rob Roy", "Hearts Cry", "Deep Impact", "Matsurida Gogh", "Daiwa Scarlet",
+    "Dream Journey", "Victoire Pisa", "Orfevre", "Gold Ship", "Gentildonna",
+    "Gold Actor", "Satono Diamond", "Kitasan Black", "Blast Onepiece", "Lys Gracieux",
+    "Chrono Genesis", "Efforia", "Equinox", "Do Deuce", "Regaleira",
+    "Museum Mile"
+  )
+)
+
+# Join on arima kinen df
+arima_kinen_all <- left_join(arima_kinen_all, ak_names, by = 'horse_name') |> 
+    mutate(prize_money_usd = prize_money_10kY * 65.34, .after = prize_money_10kY) |> 
+    relocate(horse_name_eng, .after = horse_name)
+```
+
+```{r fig.height=10, fig.width=8}
+ggplot(arima_kinen_all) +
+
+    # Dotted gridlines
+    geom_segment(aes(x = 0, xend = 20000, y = n, yend = n), linetype = 'dotted', linewidth = 0.2) +
+    
+    # Year list
+    geom_text(aes(x = -1000, y = n, label = year)) +
+
+    # Winners list
+    geom_richtext(aes(x = 3000, y = n, label = horse_name_eng), fill = "#F3F2EE", label.size = 0, label.padding = unit(0.1, "lines"), size = 4) +
+
+    # Margin plot
+    geom_segment(data = ak_margins_all, aes(x = 8000 - margin_parsed * 150, xend = 8000 + margin_parsed * 150, y = n, yend = n), linewidth = 3) +
+
+    # Popular rank plot
+    geom_segment(aes(x = 10000, xend = 10000 + popular_rank_rev * 250, y = n, yend = n), linewidth = 2, color = colors[3], alpha = 0.6) +
+
+    # Prize money plot
+    geom_ribbon(aes(xmin = 14000, xmax = 14000 + prize_money_usd * 0.0018, y = n), orientation = 'y', position = 'identity', fill = colors[2], alpha = 0.6) +
+    geom_point(data = subset(arima_kinen_all, annot), aes(x = 14000 + prize_money_usd * 0.0018, y = n)) +
+    geom_label(data = subset(arima_kinen_all, annot), aes(x = 14000 + prize_money_usd * 0.0018 + 400, y = n, label = round(prize_money_usd, 1)), hjust = 0) +
+    
+    # Column titles
+    annotate("text", x = c(-1000, 3000, 8000, 12000, 17000), y = -2, label = c("Year", "Winner", "2nd Place\nMargin Size", "Favorite-to-Win", "Prize Money")) +
+    # Vertical lines
+    annotate("segment", x = c(-2000, 0, 6000, 10000, 14000, 20000), xend = c(-2000, 0, 6000, 10000, 14000, 20000), y = -3, yend = 41) +
+    # Horizontal lines
+    annotate("segment", x = -2000, xend = 20000, y = c(-3, -1, 41), yend = c(-3, -1, 41)) +
+
+    # Column unit labels
+    annotate("text", x = c(10500, 13500), y = 0, label = c("Least", "Most"), hjust = c(0, 1)) +
+    annotate("text", x = c(14500, 19500), y = 0, label = c("0", "$3.2M"), hjust = c(0, 1)) +
+
+    labs(title = "Arima Kinen Winners") +
+
+    scale_y_reverse(expand = expansion(mult = 0.005)) +
+
+    theme_void() +
+
+    theme(
+        plot.background = element_rect(fill = "#F3F2EE", color = NA),
+        plot.margin = margin(20, 20, 20, 20),
+        plot.title = element_text(hjust = 0.01, size = 25, margin = margin(0, 0, 8, 8))
+    )
+```
+
+```{r}
+# Save Arima Kinen Winners
+ggsave(here::here("outputs", paste0("ak_winners_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".png")), dpi = 320, width = 9, height = 13)
+```
+
+# Arima Kinen Finish Times
+How have finish times changed at the Arima Kinen?
+
+```{r}
+ggplot(arima_kinen_all, aes(year, finish_time)) +
+    geom_point()
+```
+
+# Arima Kinen Margins
+
+```{r}
+jra_results_margin |> 
+    filter(race_name == "有馬記念", final_position == 2) |> 
+    
+    ggplot(aes(x = margin_parsed)) +
+        geom_histogram() +
+        theme_minimal()
 ```
