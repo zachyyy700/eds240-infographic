@@ -1,5 +1,5 @@
-# Exploration qmd artifacts
-exploration_files/
+# qmd artifacts
+*_files/
 
 # Translate files
 translate*
