@@ -1,6 +1,8 @@
 # qmd artifacts
 *_files/
 *.html
+
+.DS_Store
 # Translate files
 translate*
 
