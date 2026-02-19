@@ -1,3 +1,6 @@
+# outputs
+/outputs
+
 # qmd artifacts
 *_files/
 *.html
