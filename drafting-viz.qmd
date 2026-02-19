@@ -1,5 +1,8 @@
 ---
 author: "Zach Loo"
+execute:
+    message: false
+    warning: false
 ---
 
 # Pre-Planning
@@ -12,11 +15,11 @@ author: "Zach Loo"
 
 Inspiration #1
 
-![](tour-de-france.png)
+![](inspo/tour-de-france.png)
 
 Inspiration #2
 
-![](rap-artists-likert.png)
+![](inspo/rap-artists-likert.png)
 
 ```{r}
 library(tidyverse)
@@ -24,6 +27,11 @@ library(scales)
 library(gghighlight)
 library(patchwork)
 library(ggtext)
+library(ggpubr)
+library(showtext)
+
+font_add_google("Playfair", "playfair")
+font_add_google("Courier Prime", "courier")
 ```
 
 ```{r}
@@ -51,7 +59,7 @@ colnames(jra_results_eng) <- c("race_pp_id", "race_id", "race_date", "race_meeti
 jra_results_eng  <- jra_results_eng |> 
     mutate(year = year(race_date), month = month(race_date))
 
-# # Convert finish time character to duration
+# Convert finish time character to duration
 jra_results_eng <-  jra_results_eng |> 
     mutate(finish_time = as.duration(ms(finish_time)))
 ```
@@ -59,14 +67,17 @@ jra_results_eng <-  jra_results_eng |>
 ```{r}
 # Create function to parse margin column as numeric
 parse_margin <- function(margin) {
+    # Handle Japanese chr cases, convert to numeric equivalent
     if (is.na(margin)) return(NA_real_)
     if (margin == "ハナ") return(0.05)
     if (margin == "アタマ") return(0.2)
     if (margin == "クビ") return(0.25)
     if (margin == "同着") return(0)
-
+    
+    # Replace period in margin value with a space 
     margin <- str_replace(margin,"\\.", " ")
 
+    # Detect fraction margin value and convert to numeric value
     if (str_detect(margin,"/")) {
         parts <- str_split(margin, " ")[[1]]
         if (length(parts) == 2) {
@@ -93,25 +104,22 @@ jra_results_margin <- jra_results_eng |>
 
 ```
 
+## Recent AK Data
+
+This dataset only goes up to 2021 and even the 2021 data isn't complete (up to 07-18-2021). Since I'm shifting my focus to just one race, the Arima Kinen, recent AK data can be manually compiled from the JRA official website. The following sections consist of:
+
+1. Creating a new dataframe containing recent AK information 2021-2025
+
+2. Joining on the original dataframe with `bind_rows()`
+
+-  optional: translate Japanese labels for plotting
+
+3. Resulting analysis.
+
 # Arima Kinen Margins
 
 ```{r}
-jra_results_margin |> 
-    filter(race_name == "有馬記念", final_position == 2) |> 
-    
-    ggplot(aes(x = margin_parsed)) +
-        geom_histogram() +
-        theme_minimal()
-```
-
-# Arima Kinen Winners
-
-```{r}
-# Filter to Arima Kinen & select columns of interest
-arima_kinen_data <- jra_results_eng |> 
-    filter(race_name == "有馬記念", final_position == 1) |> 
-    select(race_id, race_date, distance_m, horse_number, horse_name, horse_age, finish_time, final_600m_time, win_odds_100Y, popular_rank, prize_money_10kY, year, horse_trainer, horse_owner)
-
+# Filter original df to AK margins for margins plot
 ak_margins <- jra_results_margin |> 
     filter(race_name == "有馬記念", final_position == 2) |> 
     select(race_date, horse_name, year, margin, margin_parsed) |> 
@@ -119,22 +127,37 @@ ak_margins <- jra_results_margin |>
 ```
 
 ```{r}
-# Create df of recent data to include recent place
+# Compile recent margin data of interest, margins of horses that placed 2nd
 ak_margins_recent <- tibble(
     race_date = c("2021-12-26", "2022-12-25", "2023-12-24", "2024-12-22", "2025-12-28"),
     horse_name = c("ディープボンド", "ボルドグフーシュ", "スターズオンアース", "シャフリヤール", "コスモキュランダ"),
     year = c(2021, 2022, 2023, 2024, 2025),
     margin = c("3/4", "2.1/2", "1/2", "ハナ", "1/2")
 ) |> 
-    mutate(race_date = as.Date(race_date), margin_parsed = map_dbl(margin,parse_margin))
+    mutate(race_date = as.Date(race_date), margin_parsed = map_dbl(margin, parse_margin))
 
 ak_margins_all <- bind_rows(ak_margins, ak_margins_recent) |> 
     mutate(n = row_number())
 ```
 
 ```{r}
-# Create df of recent data to include recent winnersdue to outdated data
-arima_kinen_recent <- tibble(
+ggplot(ak_margins_all, aes(margin_parsed)) +
+    geom_histogram() +
+    theme_minimal()
+```
+
+# Arima Kinen Winners
+
+```{r}
+# Filter original df to Arima Kinen & select columns of interest
+ak_winners <- jra_results_eng |> 
+    filter(race_name == "有馬記念", final_position == 1) |> 
+    select(race_id, race_date, distance_m, horse_number, horse_name, horse_age, finish_time, final_600m_time, win_odds_100Y, popular_rank, prize_money_10kY, year, horse_trainer, horse_owner) 
+```
+
+```{r}
+# Compile recent AK winners of interest
+ak_winners_recent <- tibble(
     race_date = c("2021-12-26", "2022-12-25", "2023-12-24", "2024-12-22", "2025-12-28"),
     distance_m = c(2500),
     horse_number = c(10, 9, 5, 8, 4),
@@ -156,7 +179,7 @@ arima_kinen_recent <- tibble(
 
 ```{r}
 # Add new rows to outdated data
-arima_kinen_all  <- bind_rows(arima_kinen_data, arima_kinen_recent) |> 
+arima_kinen_all  <- bind_rows(ak_winners, ak_winners_recent) |> 
     mutate(
         n = row_number(), 
         annot = ifelse(n %% 5 == 0 & n != n(), TRUE, FALSE),
@@ -164,6 +187,8 @@ arima_kinen_all  <- bind_rows(arima_kinen_data, arima_kinen_recent) |>
 
     mutate(popular_rank_rev = abs(popular_rank - 16), .after = popular_rank)
 ```
+
+This plot also needs an English horse name column so create a translate df to join on the data.
 
 ```{r}
 # Create translation df
@@ -192,21 +217,29 @@ ak_names <- tibble(
 
 # Join on arima kinen df
 arima_kinen_all <- left_join(arima_kinen_all, ak_names, by = 'horse_name') |> 
-    mutate(prize_money_usd = prize_money_10kY * 65.34, .after = prize_money_10kY) |> 
+    # mutate(prize_money_usd = prize_money_10kY * 65.34, .after = prize_money_10kY) |> 
     relocate(horse_name_eng, .after = horse_name)
 ```
 
-```{r fig.height=10, fig.width=8}
-ggplot(arima_kinen_all) +
+```{r}
+arima_kinen_all <- arima_kinen_all |> 
+    mutate(prize_money_label = round(prize_money_10kY / 100, 1), .after = prize_money_10kY)
+```
+
+```{r fig.height=10, fig.width=9}
+showtext_auto(enable = TRUE)
+showtext_opts(dpi = 96)
+
+ggplot(arima_kinen_all) + 
 
     # Dotted gridlines
     geom_segment(aes(x = 0, xend = 20000, y = n, yend = n), linetype = 'dotted', linewidth = 0.2) +
     
     # Year list
-    geom_text(aes(x = -1000, y = n, label = year)) +
+    geom_text(aes(x = -1000, y = n, label = year), size = 4) +
 
     # Winners list
-    geom_richtext(aes(x = 3000, y = n, label = horse_name_eng), fill = "#F3F2EE", label.size = 0, label.padding = unit(0.1, "lines"), size = 4) +
+    geom_richtext(aes(x = 3000, y = n, label = horse_name_eng), fill = "#F3F2EE", label.size = 0, label.padding = unit(0.1, "lines"), family = 'playfair', size = 5) +
 
     # Margin plot
     geom_segment(data = ak_margins_all, aes(x = 8000 - margin_parsed * 150, xend = 8000 + margin_parsed * 150, y = n, yend = n), linewidth = 3) +
@@ -215,22 +248,25 @@ ggplot(arima_kinen_all) +
     geom_segment(aes(x = 10000, xend = 10000 + popular_rank_rev * 250, y = n, yend = n), linewidth = 2, color = colors[3], alpha = 0.6) +
 
     # Prize money plot
-    geom_ribbon(aes(xmin = 14000, xmax = 14000 + prize_money_usd * 0.0018, y = n), orientation = 'y', position = 'identity', fill = colors[2], alpha = 0.6) +
-    geom_point(data = subset(arima_kinen_all, annot), aes(x = 14000 + prize_money_usd * 0.0018, y = n)) +
-    geom_label(data = subset(arima_kinen_all, annot), aes(x = 14000 + prize_money_usd * 0.0018 + 400, y = n, label = round(prize_money_usd, 1)), hjust = 0) +
+    geom_ribbon(aes(xmin = 14000, xmax = 14000 + prize_money_10kY * 0.115, y = n), orientation = 'y', position = 'identity', fill = colors[2], alpha = 0.6) +
+    geom_point(data = subset(arima_kinen_all, annot), aes(x = 14000 + prize_money_10kY * 0.115, y = n), size = 1) +
+    geom_richtext(data = subset(arima_kinen_all, annot), aes(x = 14000 + prize_money_10kY * 0.115 + 400, y = n, label = prize_money_label), fill = "#F3F2EE", hjust = 0, label.size = 0, label.padding = unit(0.1, "lines"), size = 3) +
     
     # Column titles
-    annotate("text", x = c(-1000, 3000, 8000, 12000, 17000), y = -2, label = c("Year", "Winner", "2nd Place\nMargin Size", "Favorite-to-Win", "Prize Money")) +
+    annotate("text", x = c(-1000, 3000, 8000, 12000, 17000), y = -2, label = c("Year", "Winner", "Winning\nMargin Size", "Favorite-to-Win", "Prize Money"), size = 4.5, lineheight = 0.7) +
     # Vertical lines
-    annotate("segment", x = c(-2000, 0, 6000, 10000, 14000, 20000), xend = c(-2000, 0, 6000, 10000, 14000, 20000), y = -3, yend = 41) +
+    annotate("segment", x = c(-2000, 0, 6000, 10000, 14000, 20000), xend = c(-2000, 0, 6000, 10000, 14000, 20000), y = -3, yend = 41, linewidth = 0.3) +
     # Horizontal lines
-    annotate("segment", x = -2000, xend = 20000, y = c(-3, -1, 41), yend = c(-3, -1, 41)) +
+    annotate("segment", x = -2000, xend = 20000, y = c(-3, -1, 41), yend = c(-3, -1, 41), linewidth = 0.3) +
 
     # Column unit labels
-    annotate("text", x = c(10500, 13500), y = 0, label = c("Least", "Most"), hjust = c(0, 1)) +
-    annotate("text", x = c(14500, 19500), y = 0, label = c("0", "$3.2M"), hjust = c(0, 1)) +
+    annotate("text", x = c(10500, 13500), y = 0, label = c("Least", "Most"), hjust = c(0, 1), size = 3) +
+    annotate("text", x = c(14500, 19500), y = 0, label = c("0", "¥500M"), hjust = c(0, 1), size = 3) +
 
-    labs(title = "Arima Kinen Winners") +
+    # Caption
+
+
+    labs(title = "Arima Kinen Winners", caption = "Repeat Winners") +
 
     scale_y_reverse(expand = expansion(mult = 0.005)) +
 
@@ -238,14 +274,16 @@ ggplot(arima_kinen_all) +
 
     theme(
         plot.background = element_rect(fill = "#F3F2EE", color = NA),
-        plot.margin = margin(20, 20, 20, 20),
-        plot.title = element_text(hjust = 0.01, size = 25, margin = margin(0, 0, 8, 8))
+        plot.margin = margin(10, 10, 10, 10),
+        plot.title = element_text(family = 'playfair', size = 32, margin = margin(0, 0, 5, 10)),
+        plot.caption = element_text(face = 'bold')
     )
 ```
 
 ```{r}
-# Save Arima Kinen Winners
-# ggsave(here::here("outputs", paste0("ak_winners_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".png")), dpi = 320, width = 9, height = 13)
+# showtext_opts(dpi = 320)
+# # Save Arima Kinen Winners
+# ggsave(here::here("outputs", paste0("ak_winners_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".png")), dpi = 320, width = 9, height = 10)
 ```
 
 # Arima Kinen Age Distribution
@@ -279,15 +317,18 @@ age_combined <- jra_age_dist |>
 ```{r}
 ggplot(data = age_combined) +
     geom_segment(aes(x = horse_age, xend = horse_age, y = jra_perc, yend = ak_perc), color = 'grey69') +
-    geom_point(aes(x = horse_age, y = jra_perc, color = "All Races")) +
-    geom_point(aes(x = horse_age, y = ak_perc, color = "Arima Kinen")) +
+    geom_point(aes(x = horse_age, y = jra_perc, color = "All Races"), size = 3) +
+    geom_point(aes(x = horse_age, y = ak_perc, color = "Arima Kinen"), size = 3) +
 
-    labs(x = "Horse Age", y = "Percentage") +
+    labs(x = "Horse Age", y = "Percentage", title = "Age & Performance", subtitle = "Comparison between the Arima Kinen and other JRA races.") +
 
     scale_color_manual(values = c("All Races" = 'grey59', "Arima Kinen" = colors[1])) +
     scale_y_continuous(labels = label_percent()) +
 
-    theme_classic()
+    theme_classic() +
+    theme(
+        panel.grid.major.y = element_line(color = 'grey59', linewidth = 0.5, linetype = 'dotted'),
+        legend.title = element_blank())
 ```
 
 # Arima Kinen Finish Times
@@ -295,7 +336,14 @@ How have finish times changed at the Arima Kinen?
 
 ```{r}
 ggplot(arima_kinen_all, aes(year, finish_time)) +
-    geom_point()
+    geom_line() +
+    geom_point() +
+
+    labs(x = "Year", y = "Finish Time (seconds)", title = "Arima Kinen 1st Place Times") +
+
+    theme_classic() +
+
+    scale_x_continuous(breaks = seq(1985, 2025, by = 5), labels = seq(1985, 2025, by = 5))
 
 ```
 
@@ -303,7 +351,7 @@ ggplot(arima_kinen_all, aes(year, finish_time)) +
 Since the Arima Kinen is one of the biggest races, how does 1st place prize money compare with other G1 races?
 
 ```{r}
-# Create df for recent data
+# Create df for recent data, winners of different G1 races & 1st place prize
 prize_g1_recent <- tribble(
     ~year, ~race_name, ~prize_money_10kY,
     2021, "東京優駿", 22718.8,
@@ -340,20 +388,66 @@ prize_g1 <- jra_results_eng |>
 ```
 
 ```{r}
+# Combine recent & original data
 prize_g1_all <- bind_rows(prize_g1, prize_g1_recent)
 ```
 
 ```{r}
-ggplot(prize_g1_all) +
-    geom_line(aes(x = year, y = prize_money_10kY, group = race_name, color = race_name)) +
+race_names_translate <- tibble(
+    race_name = c("有馬記念", "宝塚記念", "東京優駿"),
+    race_name_eng = c("Arima Kinen", "Takarazuka Kinen", "Tokyo Yushun")
+)
 
-    labs(x = "Year", y = "Prize Money") +
+prize_g1_all <- left_join(prize_g1_all, race_names_translate, by = 'race_name') 
+```
+
+```{r}
+prize_g1_all <- prize_g1_all |> 
+    mutate(race_name_eng = factor(race_name_eng, levels = c("Arima Kinen", "Tokyo Yushun", "Takarazuka Kinen")))
+```
+
+```{r}
+ggplot(prize_g1_all) +
+    geom_line(aes(x = year, y = prize_money_10kY, group = race_name_eng, color = race_name_eng), linewidth = 1.5) +
+
+    labs(x = "Year", y = "Prize Money", color = "Race Name") +
 
     scale_y_continuous(labels = label_currency(prefix = "¥", suffix = "M", scale = 1/100)) +
 
+    scale_color_manual(values = c(colors[1], colors[3], colors[5])) +
+
     scale_x_continuous(breaks = seq(1990, 2025, by = 5)) +
 
-    theme_classic()
+    theme_classic() + 
+    theme(panel.grid.major.y = element_line(color = 'grey59', linewidth = 0.5, linetype = 'dotted'))
+```
+
+# Arima Kinen Favorite Win Rate
+
+```{r}
+ak_fav_winrates <- arima_kinen_all |> 
+    mutate(popular_rank_bin = case_when(
+        popular_rank %in% c(1, 2, 3) ~ "1-3",
+        popular_rank %in% c(4, 5, 6) ~ "4-6",
+        popular_rank %in% c(7, 8, 9) ~ "7-9",
+        popular_rank >= 10 ~ "10+"
+    ), .after = popular_rank) |> 
+
+    mutate(popular_rank_bin = factor(popular_rank_bin, levels = c("1-3", "4-6", "7-9", "10+")))
+```
+
+```{r}
+ak_fav_winrates |> 
+    group_by(popular_rank_bin) |> 
+    summarise(win_rate = n() / nrow(ak_fav_winrates)) |> 
+    ggdonutchart(x = 'win_rate', label = 'popular_rank_bin', lab.pos = 'in',
+    color = 'white',
+    fill = 'popular_rank_bin',
+    palette = c(colors[3], colors[4], colors[5], colors[6])) +
+
+    labs(title = "Arima Kinen Winrates by Favorite Rank") +
+
+    theme(legend.position = 'none')
 ```
 
 # Prize Money Trend
@@ -396,44 +490,44 @@ Favorite to win & actual winner win rates at different races, how good are fans 
 
 ```{r}
 # Create function to feed into map
-find_winrates <- function(data, race){
-    # Filter to race
-    race_only <- data |> 
-        filter(race_name == race)
+# find_winrates <- function(data, race){
+#     # Filter to race
+#     race_only <- data |> 
+#         filter(race_name == race)
 
-    # Various favorite's winrates
-    map_dfr(1:3, ~{
-        race_only |> 
-            filter(popular_rank == .x) |> 
-            summarise(win_rate = mean(final_position == 1, na.rm = TRUE), race_name = race)
-    }, .id = 'popular_rank') 
-}
+#     # Various favorite's winrates
+#     map_dfr(1:3, ~{
+#         race_only |> 
+#             filter(popular_rank == .x) |> 
+#             summarise(win_rate = mean(final_position == 1, na.rm = TRUE), race_name = race)
+#     }, .id = 'popular_rank') 
+# }
 
-# Call function on race list
-race_list <- c("天皇賞(春)", "天皇賞(秋)", "有馬記念", "ジャパンカップ", "宝塚記念", "東京優駿")
-winrate_df <- map_dfr(race_list, ~{
-    find_winrates(jra_results_eng, race = .x)
-})
+# # Call function on race list
+# race_list <- c("天皇賞(春)", "天皇賞(秋)", "有馬記念", "ジャパンカップ", "宝塚記念", "東京優駿")
+# winrate_df <- map_dfr(race_list, ~{
+#     find_winrates(jra_results_eng, race = .x)
+# })
 ```
 
 ```{r}
-winrate_df <- winrate_df |> 
-    mutate(popular_rank = factor(popular_rank))
+# winrate_df <- winrate_df |> 
+#     mutate(popular_rank = factor(popular_rank))
 ```
 
 ```{r}
-ggplot(winrate_df, aes(win_rate, race_name, fill = fct_rev(popular_rank))) +
-    geom_col(position = 'dodge') +
+# ggplot(winrate_df, aes(win_rate, race_name, fill = fct_rev(popular_rank))) +
+#     geom_col(position = 'dodge') +
 
-    scale_y_discrete(labels = c("Japan Cup", "Tenno Sho (Spring)", "Tenno Sho (Autumn)", "Takarazuka Kinen", "Arima Kinen", "Tokyo Yushun")) +
+#     scale_y_discrete(labels = c("Japan Cup", "Tenno Sho (Spring)", "Tenno Sho (Autumn)", "Takarazuka Kinen", "Arima Kinen", "Tokyo Yushun")) +
     
-    labs(x = "Win Rate", y = "Race", fill = "Favorite-to-Win") +
+#     labs(x = "Win Rate", y = "Race", fill = "Favorite-to-Win") +
 
-    scale_fill_manual(values = rev(c("#F4BA1F", "grey", "brown"))) +
+#     scale_fill_manual(values = rev(c("#F4BA1F", "grey", "brown"))) +
 
-    scale_x_continuous(labels = label_percent()) +
-    guides(fill = guide_legend(reverse = TRUE)) +
-    theme_minimal()
+#     scale_x_continuous(labels = label_percent()) +
+#     guides(fill = guide_legend(reverse = TRUE)) +
+#     theme_minimal()
 ```
 
 # Distance Specialization
