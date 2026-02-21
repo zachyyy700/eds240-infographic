@@ -5,7 +5,7 @@ execute:
     warning: false
 ---
 
-# Pre-Planning
+# III. Pre-Planning
 
 1. My main goal for this infographic is to inform those who know nothing about horseracing, specifically in Japan. Recently, I've been thinking about what to include to accomplish this goal. Recently, I've been thinking about focusing in on a particular race, the Arima Kinen (AK). This is one of the most popular races that occurs in December every year and it's special since horse racing fans get to vote in which horses they want to run. Instead of summarizing all the race data in this dataset, focusing on this specific race could be more impactful.
 
@@ -35,7 +35,7 @@ font_add_google("Courier Prime", "courier")
 ```
 
 ```{r}
-# Load data
+# Load clean data
 jra_results <- read_csv(here::here('data', 'jra_clean.csv'), 
 col_types = cols(race_id_horsenum = 'c', race_id = 'c', finish_time = 'c')) |> 
     
@@ -53,7 +53,7 @@ colors <- c(
     "yellow" = "#F8F360", 
     "blue" = "#4392CE", 
     "green" = "#52b788", 
-    "tan" = "#F9D1C5")
+    "tan" = "#F3F2EE")
 
 monochromeR::view_palette(colors)
 ```
@@ -76,8 +76,7 @@ This dataset only goes up to 2021 and even the 2021 data isn't complete (up to 0
 # Filter original df to AK margins for margins plot
 ak_margins <- jra_results |> 
     filter(race_name == "有馬記念", final_position == 2) |> 
-    select(race_date, horse_name, year, margin_horselen, margin_parsed) |> 
-    mutate(n = row_number())
+    select(race_date, horse_name, year, margin_horselen, margin_parsed)
 ```
 
 ```{r}
@@ -96,11 +95,18 @@ ak_margins_all <- bind_rows(ak_margins, ak_margins_recent) |>
 ```
 
 ```{r}
-ak_margins_all |> 
-    group_by(margin_parsed) |> 
-    summarise(count = n()) |> 
-    ggplot(aes(count, margin_parsed)) +
-    geom_point()
+# ak_margins_all |> 
+#     group_by(margin_parsed) |> 
+#     summarise(count = n()) |> 
+#     ggplot(aes(margin_parsed, count)) +
+
+#     scale_x_continuous(breaks = c(0.05, 0.2, 0.25, 0.5, 0.75, seq(1, 10, by = 1))) +
+
+#     theme_classic() +
+#     geom_point()
+
+ggplot(ak_margins_all, aes(x = margin_parsed)) +
+    geom_histogram()
 ```
 
 # Arima Kinen Winners
@@ -174,7 +180,6 @@ ak_names <- tibble(
 
 # Join on arima kinen df
 arima_kinen_all <- left_join(arima_kinen_all, ak_names, by = 'horse_name') |> 
-    # mutate(prize_money_usd = prize_money_10kY * 65.34, .after = prize_money_10kY) |> 
     relocate(horse_name_eng, .after = horse_name)
 ```
 
@@ -182,6 +187,12 @@ arima_kinen_all <- left_join(arima_kinen_all, ak_names, by = 'horse_name') |>
 # Create prize money label column
 arima_kinen_all <- arima_kinen_all |> 
     mutate(prize_money_label = round(prize_money_10kY / 100, 1), .after = prize_money_10kY)
+
+# Create repeat winners columns
+arima_kinen_all <- arima_kinen_all |> 
+    group_by(horse_name_eng) |> 
+    mutate(win_count = n()) |> 
+    mutate(repeat_win_label = ifelse(win_count > 1, paste0("**", horse_name_eng, "**"), horse_name_eng))
 ```
 
 ```{r fig.height=10, fig.width=9}
@@ -194,24 +205,24 @@ ggplot(arima_kinen_all) +
     geom_segment(aes(x = 0, xend = 20000, y = n, yend = n), linetype = 'dotted', linewidth = 0.2) +
     
     # Year list
-    geom_text(aes(x = -1000, y = n, label = year), size = 4) +
+    geom_text(aes(x = -1000, y = n, label = year), family = 'courier', size = 4) +
 
     # Winners list
-    geom_richtext(aes(x = 3000, y = n, label = horse_name_eng), fill = "#F3F2EE", label.size = 0, label.padding = unit(0.1, "lines"), family = 'playfair', size = 5) +
+    geom_richtext(aes(x = 3000, y = n, label = repeat_win_label), fill = colors[['tan']], label.size = 0, label.padding = unit(0.1, "lines"), family = 'playfair', size = 5) +
 
     # Margin plot
     geom_segment(data = ak_margins_all, aes(x = 8000 - margin_parsed * 150, xend = 8000 + margin_parsed * 150, y = n, yend = n), linewidth = 3) +
 
     # Popular rank plot
-    geom_segment(aes(x = 10000, xend = 10000 + win_fav_rev * 250, y = n, yend = n), linewidth = 2, color = colors[3], alpha = 0.6) +
+    geom_segment(aes(x = 10000, xend = 10000 + win_fav_rev * 250, y = n, yend = n), linewidth = 2, color = colors[['orange']], alpha = 0.6) +
 
     # Prize money plot
-    geom_ribbon(aes(xmin = 14000, xmax = 14000 + prize_money_10kY * 0.115, y = n), orientation = 'y', position = 'identity', fill = colors[2], alpha = 0.6) +
+    geom_ribbon(aes(xmin = 14000, xmax = 14000 + prize_money_10kY * 0.115, y = n), orientation = 'y', position = 'identity', fill = colors[['red']], alpha = 0.6) +
     geom_point(data = subset(arima_kinen_all, annot), aes(x = 14000 + prize_money_10kY * 0.115, y = n), size = 1) +
-    geom_richtext(data = subset(arima_kinen_all, annot), aes(x = 14000 + prize_money_10kY * 0.115 + 400, y = n, label = prize_money_label), fill = "#F3F2EE", hjust = 0, label.size = 0, label.padding = unit(0.1, "lines"), size = 3) +
+    geom_richtext(data = subset(arima_kinen_all, annot), aes(x = 14000 + prize_money_10kY * 0.115 + 400, y = n, label = prize_money_label), fill = colors[['tan']], hjust = 0, label.size = 0, label.padding = unit(0.1, "lines"), family = 'courier', size = 3) +
     
     # Column titles
-    annotate("text", x = c(-1000, 3000, 8000, 12000, 17000), y = -2, label = c("Year", "Winner", "Winning\nMargin Size", "Favorite-to-Win", "Prize Money"), size = 4.5, lineheight = 0.7) +
+    annotate("text", x = c(-1000, 3000, 8000, 12000, 17000), y = -2, label = c("Year", "Winner", "Winning\nMargin Size", "Favorite-to-Win", "Prize Money"), size = 4.5, family = 'playfair', lineheight = 0.7) +
     # Vertical lines
     annotate("segment", x = c(-2000, 0, 6000, 10000, 14000, 20000), xend = c(-2000, 0, 6000, 10000, 14000, 20000), y = -3, yend = 41, linewidth = 0.3) +
     # Horizontal lines
@@ -221,12 +232,10 @@ ggplot(arima_kinen_all) +
     annotate("text", x = c(10500, 13500), y = 0, label = c("Least", "Most"), hjust = c(0, 1), size = 3) +
     annotate("text", x = c(14500, 19500), y = 0, label = c("0", "¥500M"), hjust = c(0, 1), size = 3) +
 
-    # Caption
-
 
     labs(title = "Arima Kinen Winners", caption = "Repeat Winners") +
 
-    scale_y_reverse(expand = expansion(mult = 0.005)) +
+    scale_y_reverse(expand = expansion(mult = 0.0001)) +
 
     theme_void() +
 
@@ -234,7 +243,7 @@ ggplot(arima_kinen_all) +
         plot.background = element_rect(fill = "#F3F2EE", color = NA),
         plot.margin = margin(10, 10, 10, 10),
         plot.title = element_text(family = 'playfair', size = 32, margin = margin(0, 0, 5, 10)),
-        plot.caption = element_text(face = 'bold')
+        plot.caption = element_text(face = 'bold', family = 'playfair')
     )
 ```
 
@@ -277,12 +286,12 @@ age_combined <- jra_age |>
 ```{r}
 ggplot(data = age_combined) +
     geom_segment(aes(x = horse_age, xend = horse_age, y = jra_perc, yend = ak_perc), color = 'grey69') +
-    geom_point(aes(x = horse_age, y = jra_perc, color = "All Races"), size = 3) +
+    geom_point(aes(x = horse_age, y = jra_perc, color = "Other Races"), size = 3) +
     geom_point(aes(x = horse_age, y = ak_perc, color = "Arima Kinen"), size = 3) +
 
-    labs(x = "Horse Age", y = "Percentage", title = "Age & Performance", subtitle = "Comparison between the Arima Kinen and other JRA races.") +
+    labs(x = "Age", y = "Percentage", title = "Age Comparisons between Arima Kinen & Other Races", subtitle = "") +
 
-    scale_color_manual(values = c("All Races" = 'grey59', "Arima Kinen" = colors[['deepred']])) +
+    scale_color_manual(values = c("Other Races" = 'grey59', "Arima Kinen" = colors[['deepred']])) +
     scale_y_continuous(labels = label_percent()) +
 
     theme_classic() +
@@ -292,18 +301,48 @@ ggplot(data = age_combined) +
 ```
 
 # Arima Kinen Finish Times
-How have finish times changed at the Arima Kinen?
+How do finish times at the Arima Kinen compare to other races (same track & distance)?
 
 ```{r}
-ggplot(arima_kinen_all, aes(year, finish_time)) +
-    geom_line() +
-    geom_point() +
+non_ak_winners <- jra_results |> 
+    filter(race_name != "有馬記念", distance_m == 2500, racetrack_name == '中山', final_position == 1, track_surface == "芝") |> 
+    group_by(race_name) |> 
+    mutate(race_count = n()) |> 
+    filter(race_count >= 25)
 
-    labs(x = "Year", y = "Finish Time (seconds)", title = "Arima Kinen 1st Place Times") +
+non_ak_yearly <- non_ak_winners |> 
+    group_by(year) |> 
+    summarise(avg_win_time = mean(finish_time))
+```
 
-    theme_classic() +
+```{r fig.height=6, fig.width=9}
+ggplot() +
+    geom_line(data = non_ak_yearly, aes(year, avg_win_time, color = 'Other Races')) +
+    geom_point(data = non_ak_yearly, aes(year, avg_win_time), color = 'grey59', size = 2) +
 
-    scale_x_continuous(breaks = seq(1985, 2025, by = 5), labels = seq(1985, 2025, by = 5))
+    geom_line(data = arima_kinen_all, aes(year, finish_time, color = 'Arima Kinen')) +
+    geom_point(data = arima_kinen_all, aes(year, finish_time), color = colors[['deepred']], size = 2) +
+
+    scale_color_manual(values = c("Other Races" = 'grey59', "Arima Kinen" = colors[['deepred']])) +
+
+    annotate('richtext', x = 1997, y = 149.5, label = 'Current Record Holder:<br><b>Zenno Rob Roy (2:29.5)', label.size = 0, family = 'courier', fill = colors[['tan']]) +
+
+    labs(x = "Year", y = "Finish Time (seconds)", title = "Arima Kinen Win Times: Faster Than the Rest", subtitle = "AK winners finish faster than other race winners on the same track & distance.") +
+    
+    scale_x_continuous(breaks = seq(1985, 2025, by = 5), labels = seq(1985, 2025, by = 5)) +
+
+    theme_classic(base_family = 'courier', base_size = 12) +
+
+    theme(
+        panel.grid.major.y = element_line(color = 'grey59', linewidth = 0.5, linetype = 'dotted'),
+        panel.background = element_rect(fill = "#F3F2EE", color = NA),
+        plot.background = element_rect(fill = "#F3F2EE", color = NA),
+        plot.title = element_markdown(family = 'playfair', size = 28),
+        plot.title.position = 'plot',
+        legend.title = element_blank(),
+        legend.position = 'top',
+        legend.background = element_rect(fill = colors[['tan']], color = NA)
+    )
 
 ```
 
@@ -366,11 +405,11 @@ prize_g1_all <- prize_g1_all |>
     mutate(race_name_eng = factor(race_name_eng, levels = c("Arima Kinen", "Tokyo Yushun", "Takarazuka Kinen")))
 ```
 
-```{r}
+```{r fig.height=6, fig.width=9}
 ggplot(prize_g1_all) +
     geom_line(aes(x = year, y = prize_money_10kY, group = race_name_eng, color = race_name_eng), linewidth = 1.5) +
 
-    labs(x = "Year", y = "Prize Money", color = "Race Name") +
+    labs(x = "Year", y = "Prize Money", title = "Arima Kinen Winning Prize", subtitle = "Compared to other G1 races, the AK holds the largest prize pool.") +
 
     scale_y_continuous(labels = label_currency(prefix = "¥", suffix = "M", scale = 1/100)) +
 
@@ -378,8 +417,16 @@ ggplot(prize_g1_all) +
 
     scale_x_continuous(breaks = seq(1990, 2025, by = 5)) +
 
-    theme_classic() + 
-    theme(panel.grid.major.y = element_line(color = 'grey59', linewidth = 0.5, linetype = 'dotted'))
+    theme_classic(base_family = 'courier', base_size = 12) + 
+    theme(
+        panel.grid.major.y = element_line(color = 'grey59', linewidth = 0.5, linetype = 'dotted'),
+        panel.background = element_rect(fill = colors[['tan']], color = NA),
+        plot.background = element_rect(fill = colors[['tan']], color = NA),
+        plot.title = element_text(family = 'playfair', size = 28),
+        plot.title.position = 'plot',
+        legend.title = element_blank(),
+        legend.background = element_rect(fill = colors[['tan']], color = NA),
+        legend.position = 'top')
 ```
 
 # Arima Kinen Favorite Win Rate
@@ -593,4 +640,18 @@ The "Path to Victory".
 ```
 
 
+# VI. Progress
 
+1. Key insights
+
+Since shifting my focus to just one pretigious race, I mainly want to compare the differences between this high level of horse racing and 'lower' levels. 
+
+2. Challenges
+
+One challenge with this data is that the dataset only goes up to 2021 (and even 2021 isn't complete). Since I shifted to comparing one high-level race, I thought it wouldn't be so bad to compile the data from the official JRA website and while it wasn't too bad, it was still kind of a lengthy process. Another challenge I encountered since shifting focus, there wasn't a lot of options of plots. I just couldn't come up with ideas that would answer my overall question and be appropriate for an audience that knows nothing about horse racing. One last thing was there's no really "so what?" for this infographic. Since I'm simply just displaying information about the Arima Kinen and comparing against other races, there's no really main takeaway from the plots so I think a lot of context will have to come from supplemental text as well.
+
+3. Extra packages
+
+One package needed is the ggtext package as I want to bold names in my winners list that are repeat winners.
+
+4. Feedback
