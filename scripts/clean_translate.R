@@ -4,7 +4,7 @@
 ##                                                                            --
 ##~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 library(tidyverse)
-source("parse_margin.R")
+source("scripts/parse_margin.R")
 
 # Load data, parsing certain columns as character
 jra_results <- read_csv(here::here('data', '19860105-20210731_race_result.csv'),
