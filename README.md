@@ -33,7 +33,7 @@ This repository contains the final project materials for the course EDS 240 - Da
 
 ![](AK_infographic_newcolors.png)
 
-More information on this infographic exists in [this blogpost](zachyyy700.github.io/posts/2026-2-26-infographic/) on my personal website.
+More information on this infographic exists in [this blogpost](https://zachyyy700.github.io/posts/2026-2-26-infographic/) on my personal website.
 
 ## Data
 
