@@ -15,7 +15,7 @@ This repository contains the final project materials for the course EDS 240 - Da
 - [clean_translate.R](scripts/clean_translate.R)
 
     - Used to translate the Japanese columns of the original data. Also calls *parse_margin.R* to convert margin column to numerical.
-    - **Output**: Clean dataframe with English columns
+    - **Output**: Clean dataframe with English columns.
 
 - [parse_margin.R](scripts/parse_margin.R)
 
